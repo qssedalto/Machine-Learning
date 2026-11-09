@@ -1,0 +1,83 @@
+% !TeX encoding = UTF-8
+% Typesetting and mathematical conventions; extend here as needed.
+\usepackage[a4paper,left=27mm,right=27mm,top=26mm,bottom=28mm,headheight=15pt]{geometry}
+\usepackage{fontspec}
+\setmainfont{TeXGyreTermes}
+\setsansfont{TeXGyreHeros}
+\setmonofont{DejaVu Sans Mono}[Scale=0.82]
+\setCJKmainfont{Noto Serif CJK SC}
+\setCJKsansfont{Noto Sans CJK SC}
+\setCJKmonofont{Noto Sans Mono CJK SC}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{graphicx} % Insert figures when experimental figures are added
+\usepackage{booktabs,tabularx,longtable,array}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage[backend=biber,style=gb7714-2015,sorting=none,gbnamefmt=lowercase,maxbibnames=7]{biblatex}
+\addbibresource{references.bib}
+\usepackage[unicode,bookmarksnumbered=true,colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black]{hyperref}
+
+\definecolor{ink}{HTML}{202B36}
+\definecolor{accent}{HTML}{344E68}
+\definecolor{pale}{HTML}{E8EDF2}
+\definecolor{codebg}{HTML}{F5F6F7}
+\AtBeginDocument{\color{ink}}
+\ctexset{
+  section={format=\Large\bfseries\sffamily\color{accent},beforeskip=23pt,afterskip=12pt},
+  subsection={format=\large\bfseries\sffamily,beforeskip=15pt,afterskip=7pt},
+  subsubsection={format=\normalsize\bfseries\sffamily,beforeskip=11pt,afterskip=5pt}
+}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{2pt}
+\linespread{1.25}
+\setlist[itemize]{leftmargin=2.2em,itemsep=3pt,topsep=5pt}
+\setlist[enumerate]{leftmargin=2.2em,itemsep=3pt,topsep=5pt}
+\captionsetup{font=small,labelfont=bf}
+\numberwithin{equation}{section}
+
+\theoremstyle{plain}
+\newtheorem{proposition}{命题}[section]
+\newtheorem{theorem}[proposition]{定理}
+\theoremstyle{definition}
+\newtheorem{definition}[proposition]{定义}
+\newtheorem{assumption}[proposition]{假设}
+\theoremstyle{remark}
+\newtheorem{remark}[proposition]{注记}
+\renewcommand{\proofname}{证明}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Bias}{Bias}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\norm}[1]{\left\lVert #1\right\rVert}
+\newcommand{\abs}[1]{\left\lvert #1\right\rvert}
+\newcommand{\trans}{^{\mathsf T}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\sffamily 机器学习}
+\fancyhead[R]{\small\sffamily\nouppercase{\leftmark}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.35pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+\lstdefinestyle{research}{
+ language=Python,basicstyle=\ttfamily\footnotesize,backgroundcolor=\color{codebg},
+ numbers=left,numberstyle=\tiny\color{gray},numbersep=9pt,
+ frame=single,rulecolor=\color{pale},framesep=7pt,
+ showstringspaces=false,breaklines=true,tabsize=4,
+ keywordstyle=\color{accent}\bfseries,commentstyle=\color{gray},
+ xleftmargin=6pt,xrightmargin=4pt,aboveskip=13pt,belowskip=13pt
+}
+\lstset{style=research}

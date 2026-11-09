@@ -1,0 +1,59 @@
+\section{数值计算与实验记录}\label{ch:experiments}
+
+本节区分两种内容：\emph{解析可核对的算例}与\emph{需要实际执行代码的实验}。前者给出可逐项检查的数值，后者保留脚本、运行环境与后续扩展位置。实验结论不只取决于图形是否美观，还取决于数据生成方式、训练方案和比较标准。
+
+\subsection{一元线性回归的解析核对}
+
+对数据
+\[
+(x_1,y_1)=(1,2),\quad(x_2,y_2)=(2,3),\quad(x_3,y_3)=(3,5),
+\]
+有 $\bar x=2$、$\bar y=10/3$，以及
+\[
+\sum_i(x_i-\bar x)^2=2,\qquad
+\sum_i(x_i-\bar x)(y_i-\bar y)=3.
+\]
+据式 \eqref{eq:slope-ls}，最小二乘估计为
+\begin{equation}\label{eq:demo-beta}
+\hat w=\frac32,\qquad\hat b=\frac13.
+\end{equation}
+预测值依次为 $11/6,10/3,29/6$，残差依次为 $1/6,-1/3,1/6$。因此
+\begin{equation}\label{eq:demo-mse}
+\operatorname{RSS}=\frac16,\qquad
+\operatorname{MSE}=\frac1{18}.
+\end{equation}
+计算过程中必须明确：样本数为 $3$，而目标函数 $J=\operatorname{RSS}/(2m)$ 与评价指标 MSE 的缩放系数不同。此例可以用来对照正规方程、解析公式与梯度下降的结果。
+
+\subsection{NumPy 实现与结果比较}
+
+源码存放在 \texttt{code/linear\_regression\_demo.py}。程序分别用 \texttt{numpy.linalg.lstsq} 与自行实现的全批量梯度下降求解同一个问题，初始系数为零。其主要计算部分如下：
+\lstinputlisting[firstline=4,lastline=18,caption={最小二乘与梯度下降的参数估计代码},label={lst:ols}]{code/linear_regression_demo.py}
+
+这里采用每轮全数据梯度，因此更新式对应 \eqref{eq:ls-gradient}。对于本例，步长设置为 $0.1$；若更换数据或特征尺度，必须重新检查这个步长是否合理。实验输出与解析结果应在数值误差允许的范围内一致；单次运行的详细记录由源码旁的日志另行维护。
+
+\subsection{逻辑回归的梯度一致性检查}
+
+逻辑回归脚本 \texttt{code/logistic\_gradient\_check.py} 使用中心差分近似数值梯度，并和式 \eqref{eq:logistic-full-gradient} 的解析梯度比较。对于参数分量 $\beta_j$，中心差分为
+\begin{equation}\label{eq:finite-difference}
+\frac{\partial J}{\partial\beta_j}
+\approx\frac{J(\beta+h e_j)-J(\beta-h e_j)}{2h},
+\end{equation}
+其中 $h>0$ 很小，$e_j$ 是第 $j$ 个标准基向量。若误差明显大于合理的数值尺度，应检查梯度符号、样本平均系数及数据矩阵维数。数值梯度检查不是理论证明，但很适合排除程序实现错误。
+
+\subsection{实验记录规范}
+
+后续实验均建议至少写明：数据来源或生成机制、样本数量与特征维数、训练/验证/测试划分、随机种子、损失函数、优化方法、主要超参数、评价指标以及计算环境。除报告最优成绩外，也应保存不符合预期的结果；这些异常往往更有助于识别模型设定或程序错误。
+
+\begin{table}[htbp]
+\centering
+\caption{实验登记表（后续按需要续填）}\label{tab:experiments}
+\begin{tabularx}{\textwidth}{p{23mm} p{34mm} X}
+\toprule
+主题 & 状态 & 下一步工作\\
+\midrule
+线性回归 & 解析结果已核对 & 对比梯度法、最小二乘和不同特征尺度\\
+逻辑回归 & 公式推导已完成 & 核对解析梯度与数值梯度，记录拟合结果\\
+多项式拟合 & 已有历史示例 & 补齐原始数据、随机种子与可重复脚本\\
+\bottomrule
+\end{tabularx}
+\end{table}

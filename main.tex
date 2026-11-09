@@ -1,0 +1,39 @@
+% !TeX program = xelatex
+% !TeX encoding = UTF-8
+% A living research note. All section texts are in chapters/*.tex.
+\documentclass{ctexart}
+\input{config/preamble}
+
+\title{机器学习}
+\author{天国\quad 付}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{plain}
+
+\begin{abstract}
+本文围绕统计学习中的模型构建、参数估计、数值优化与泛化评估，整理基础定义、主要公式及其推导条件。讨论以线性回归和二分类概率模型为主，同时记录梯度下降的数学性质、模型评估的常用方法与可复现的数值算例。文稿按照研究问题组织，而非课堂顺序；后续将逐步补充正则化、优化算法及相关实验。
+\end{abstract}
+\noindent\textbf{关键词：}统计学习；最小二乘；梯度下降；逻辑回归；泛化误差
+
+\tableofcontents
+\clearpage
+
+\input{chapters/preface}
+\input{chapters/foundations}
+\input{chapters/least_squares}
+\input{chapters/gradient_methods}
+\input{chapters/logistic_regression}
+\input{chapters/generalization}
+\input{chapters/experiments}
+\input{chapters/open_questions}
+% Add new independent topics here: \input{chapters/regularization}
+
+\appendix
+\input{appendices/notation}
+\input{appendices/development_log}
+
+\clearpage
+\printbibliography[heading=bibintoc,title={参考文献}]
+\end{document}
