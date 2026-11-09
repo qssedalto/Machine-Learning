@@ -1,0 +1,45 @@
+# LaTeX / latexmk 中间文件
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.nav
+*.snm
+*.xdv
+*.acn
+*.acr
+*.alg
+*.glg
+*.glo
+*.gls
+*.ist
+*.ilg
+
+# 保留仓库根目录的 main.pdf，其他 PDF 按需手动管理
+# 不使用 *.pdf 忽略规则
+
+# Python 缓存与虚拟环境
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+.env
+.env.*
+
+# 编辑器与系统临时文件
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

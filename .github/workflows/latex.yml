@@ -1,0 +1,89 @@
+name: 编译机器学习研究笔记
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "main.tex"
+      - "config/**"
+      - "chapters/**"
+      - "appendices/**"
+      - "code/**"
+      - "references.bib"
+      - "requirements.txt"
+      - ".github/workflows/latex.yml"
+  pull_request:
+    paths:
+      - "main.tex"
+      - "config/**"
+      - "chapters/**"
+      - "appendices/**"
+      - "code/**"
+      - "references.bib"
+      - "requirements.txt"
+      - ".github/workflows/latex.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: 检查 Python 并编译 PDF
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v6
+
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: 安装 Python 依赖
+        run: python -m pip install -r requirements.txt
+
+      - name: 运行基础数值实验
+        run: |
+          python -m compileall -q code
+          python code/linear_regression_demo.py
+          python code/logistic_gradient_check.py
+          python code/polynomial_comparison.py
+
+      - name: 使用 XeLaTeX 与 Biber 编译
+        uses: xu-cheng/latex-action@v4
+        with:
+          root_file: main.tex
+          texlive_version: "2026"
+          os: debian
+          latexmk_use_xelatex: true
+          extra_system_packages: "fonts-noto-cjk fonts-dejavu-core fonts-texgyre"
+
+      - name: 检查 PDF 是否生成
+        run: test -s main.pdf
+
+      - name: 保存可下载的 PDF
+        uses: actions/upload-artifact@v6
+        with:
+          name: Machine-Learning-PDF
+          path: main.pdf
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: 将最新 PDF 同步到 main 分支
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if git diff --quiet -- main.pdf; then
+            echo "PDF 未发生变化，无需提交。"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- main.pdf
+          git commit -m "文档：自动更新编译后的 PDF [skip ci]"
+          git push origin HEAD:main
