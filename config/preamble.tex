@@ -5,9 +5,8 @@
 \setmainfont{TeXGyreTermes}
 \setsansfont{TeXGyreHeros}
 \setmonofont{DejaVu Sans Mono}[Scale=0.82]
-\setCJKmainfont{Noto Serif CJK SC}
-\setCJKsansfont{Noto Sans CJK SC}
-\setCJKmonofont{Noto Sans Mono CJK SC}
+% ctexart already configures Fandol Chinese fonts (including bold and italic)
+% in the cloud XeLaTeX environment; avoid overriding its CJK font families.
 \usepackage{amsmath,amssymb,amsthm,mathtools,bm}
 \usepackage{graphicx} % Insert figures when experimental figures are added
 \usepackage{booktabs,tabularx,longtable,array}
