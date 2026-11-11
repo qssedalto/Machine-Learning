@@ -1,30 +1,76 @@
-\section{机器学习的基本概念}\label{ch:foundations}
+\section{从数据到优化问题}\label{ch:foundations}
 
-\subsection{数据、任务与模型}
+\subsection{统计学习的对象}
 
-训练数据由若干组 $(x_i,y_i)$ 组成：$x_i$ 是输入，$y_i$ 是对应结果，$m$ 是样本数。
+考虑训练数据
+\begin{equation}\label{eq:dataset}
+D=\{(x_i,y_i)\}_{i=1}^{m},\qquad x_i\in\mathcal X,\quad y_i\in\mathcal Y.
+\end{equation}
+其中 $x_i$ 为输入、$y_i$ 为目标变量，$m$ 为样本数。若输入是 $p$ 维数值向量，则 $x_i\in\R^p$。监督学习利用输入与目标之间的对应关系估计预测函数；无监督学习通常只有输入数据，其目标是发现数据的结构，例如聚类或低维表示\cite[第1章]{zhou2016}。
 
-\begin{itemize}
-\item \textbf{回归：}预测连续数值，例如房价。
-\item \textbf{分类：}预测类别，例如邮件是否为垃圾邮件。
-\item \textbf{监督学习：}训练数据同时包含输入和答案；无监督学习通常没有对应标签。
-\end{itemize}
+对监督学习而言，回归任务的目标变量通常是连续数值；分类任务的目标变量是有限个类别。分类器可以输出类别，也可以先输出类别的条件概率，再根据决策规则得到最终类别。\emph{是否使用梯度下降并不决定任务类型}；任务类型取决于待预测的变量和问题设定。
 
-最简单的预测模型是直线
+以简单线性模型为例，假设类为
 \begin{equation}\label{eq:linear-family}
-\hat y=wx+b,
+\mathcal F=\{f_{w,b}(x)=wx+b:\;w,b\in\R\}.
 \end{equation}
-其中 $w$ 是斜率，$b$ 是截距。训练就是利用样本确定合适的参数。
+模型族 $\mathcal F$ 规定允许采用怎样的函数形式；参数 $w,b$ 选择其中一个具体模型；优化算法则确定怎样利用数据求得参数。三者在概念上应当分开。
 
-\subsection{损失函数}
+\subsection{损失函数和经验风险}
 
-预测值 $\hat y_i$ 与真实值 $y_i$ 的差叫作误差。回归中常用\textbf{均方误差}（MSE）：
+预测结果未必与观测值相同，需要用损失函数 $L(y,\hat y)$ 量化差异。常见的回归损失为平方损失
+\begin{equation}\label{eq:squared-loss}
+L(y,\hat y)=(y-\hat y)^2.
+\end{equation}
+在有限样本上取平均，得到经验风险
 \begin{equation}\label{eq:empirical-risk}
-\boxed{\operatorname{MSE}=\frac1m\sum_{i=1}^{m}(y_i-\hat y_i)^2.}
+\widehat R_D(f)=\frac1m\sum_{i=1}^{m}L\bigl(y_i,f(x_i)\bigr).
 \end{equation}
+因此，经验风险最小化（empirical risk minimization, ERM）可以写成
+\begin{equation}\label{eq:erm}
+\hat f\in\argmin_{f\in\mathcal F}\widehat R_D(f).
+\end{equation}
+式 \eqref{eq:erm} 说明学习问题如何转化为优化问题，但没有规定一定使用哪种算法。对可以直接求解的模型，可使用解析方法；对难以得到闭式解的模型，常考虑数值迭代方法。
 
-模型训练通常就是让损失尽可能小。例如，线性回归要选择使 MSE 较小的 $w,b$。平方误差计算方便，但对异常值较敏感。
+平方损失的优点在于非负、连续可微，且有利于构造最小二乘问题；不足之处是较大的残差会受到二次惩罚，因此估计结果可能对异常值较敏感。损失函数并非只有一种，后文讨论二分类时将使用由概率模型导出的对数损失。
 
-\subsection{训练好不等于预测好}
+\subsection{经验风险与总体风险}
 
-\textbf{训练误差}衡量模型对已有样本的拟合；\textbf{测试误差}衡量它对未参与训练的数据的预测表现。训练误差很小，也可能发生过拟合。评价模型时必须关注新数据上的表现\cite[第1章]{zhou2016}。
+若数据来自未知联合分布 $P_{X,Y}$，则可定义总体风险
+\begin{equation}\label{eq:population-risk}
+R(f)=\E_{(X,Y)\sim P_{X,Y}}\bigl[L(Y,f(X))\bigr].
+\end{equation}
+经验风险用样本均值近似总体期望；两者通常并不相等。训练过程直接接触到的是样本，而预测最终面向未知观测，这种差别是泛化问题的起点\cite[第1章]{lihang2019}。
+
+\begin{proposition}[固定预测函数时经验风险的无偏性]\label{prop:fixed-risk}
+设 $Z_i=(X_i,Y_i)$ 独立同分布，且 $\E\abs{L(Y,f(X))}<\infty$。若预测函数 $f$ 在观测该训练样本之前已固定，则
+\begin{equation}
+\E_D\bigl[\widehat R_D(f)\bigr]=R(f).
+\end{equation}
+\end{proposition}
+\begin{proof}
+由期望的线性性及相同分布，
+\[
+\E_D\left[\frac1m\sum_{i=1}^mL(Y_i,f(X_i))\right]
+=\frac1m\sum_{i=1}^m\E[L(Y_i,f(X_i))]=R(f).
+\]
+此处不需要各损失项彼此独立才能使用期望线性性；独立同分布是给定的典型抽样假设。
+\end{proof}
+
+\begin{remark}
+命题 \ref{prop:fixed-risk} 的关键是 $f$ 在样本被观察前已固定。训练所得的 $\hat f_D$ 依赖于同一批数据，不能把它不加区别地代入上述证明；否则容易错误地认为训练误差天然就是泛化误差的无偏估计。
+\end{remark}
+
+\subsection{一个不依赖数值优化器的例子}
+
+对于 $D=\{(1,2),(2,4),(3,6)\}$，考虑过原点的线性模型 $f_w(x)=wx$。其均方误差为
+\begin{align}
+\widehat R_D(w)
+&=\frac13\bigl[(w-2)^2+(2w-4)^2+(3w-6)^2\bigr]\\
+&=\frac{14}{3}(w-2)^2.
+\end{align}
+由完全平方的非负性可知 $\widehat R_D(w)\ge 0$，且等号仅在 $w=2$ 时成立。因此 $w^*=2$ 是唯一全局最小点，最优值为零。这个例子说明：建立优化问题和选择求解算法是两件事。这里直接观察平方项即可求解，无须调用梯度下降。
+
+\subsection{保留的问题}
+
+经验风险最小化何时能得到接近总体风险最小值的模型？这一问题依赖函数类的复杂度、抽样假设及评价方法，不能仅凭目标函数的最优值回答。相关讨论放在第\ref{ch:generalization}节，并在今后的学习中继续补充更严格的泛化界。
