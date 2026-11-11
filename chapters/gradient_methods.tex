@@ -1,140 +1,168 @@
-\section{一阶优化方法：梯度下降与步长}\label{ch:gradient}
+\section{第三课：用导数一步一步找到更好的参数}\label{ch:gradient}
 
-\subsection{迭代法的出发点}
+\subsection{为什么需要梯度下降？}
 
-最小二乘问题在适当的秩条件下可以写出显式解，但许多优化目标没有便于直接计算的闭式解。对可微函数 $J:\R^p\to\R$，考虑
-\[
-\min_{\theta\in\R^p}J(\theta).
-\]
-迭代方法从初值 $\theta_0$ 出发，构造 $\theta_1,\theta_2,\ldots$，希望目标函数逐步下降，最终得到近似最优解。需要区分两个概念：\emph{下降方向}决定局部朝哪里移动，\emph{步长}决定一次移动多远。即便方向正确，过大的步长仍可能使函数值上升。
+上一课用最小二乘公式直接求出了斜率和截距，但并不是每个机器学习模型都存在方便使用的解析解。遇到复杂的目标函数，可以先任选一个参数初值，计算当前位置的导数，向使目标函数减小的方向迈一小步，再重复这个过程。这就是\textbf{梯度下降法}（Gradient Descent）的基本思想。
 
-\subsection{方向导数与负梯度}
+这一课先不研究 Lipschitz 连续性、收敛速度等复杂条件，只用一元函数求导、二元函数偏导和简单算例理解算法为什么能工作。
 
-若 $J$ 在 $\theta$ 处可微，沿单位方向 $d$ 的方向导数为
-\begin{equation}\label{eq:directional-deriv}
-D_dJ(\theta)=\nabla J(\theta)\trans d,\qquad \norm d_2=1.
+\subsection{先从一个一元二次函数开始}
+
+设
+\begin{equation}\label{eq:scalar-quadratic}
+f(x)=(x-3)^2.
 \end{equation}
-依据 Cauchy--Schwarz 不等式，
+显然 $x=3$ 时取得最小值 $0$。假装我们还不知道答案，只知道求导：
 \[
-\nabla J(\theta)\trans d\ge-\norm{\nabla J(\theta)}_2.
+f'(x)=2(x-3).
 \]
-当 $\nabla J(\theta)\ne0$ 时，取
-\begin{equation}\label{eq:steepest-descent-direction}
-d_*=-\frac{\nabla J(\theta)}{\norm{\nabla J(\theta)}_2}
+\begin{itemize}
+\item 当 $x<3$ 时，导数为负，适当\textbf{增大} $x$ 有利于减小函数值。
+\item 当 $x>3$ 时，导数为正，适当\textbf{减小} $x$ 有利于减小函数值。
+\end{itemize}
+两个情况用一个更新公式统一表示：
+\begin{equation}\label{eq:scalar-update}
+\boxed{x_{\mathrm{新}}=x_{\mathrm{旧}}-\eta f'(x_{\mathrm{旧}}),\qquad \eta>0.}
 \end{equation}
-达到上述下界。因此负梯度是\emph{欧氏范数下局部一阶变化率最小的单位方向}。这里的“最速”是局部概念，不意味着一步更新就达到全局最优点，也不保证任意步长均能下降\cite[第5章]{liu2020}。
+$\eta$ 读作 eta，是\textbf{学习率}。学习率控制一次更新移动多远，不能随便设得很大。为什么公式是减号？因为正导数需要往左走，负导数需要往右走，减去导数恰好同时满足这两点。
 
-梯度下降法把方向与步长结合起来，得到
+\subsection{完整手算四次迭代}
+
+取初值 $x_0=1$，学习率 $\eta=0.2$。第一次先算导数：
+\[
+f'(1)=2(1-3)=-4.
+\]
+代入更新公式：
+\[
+x_1=x_0-\eta f'(x_0)=1-0.2(-4)=\boxed{1.8}.
+\]
+更新前 $f(1)=4$；更新后 $f(1.8)=1.44$，确实下降了。继续照此计算：
+\begin{center}
+\begin{tabular}{rrr}\toprule
+迭代次数&当前 $x$&函数值 $f(x)$\\\midrule
+0&1&4\\
+1&1.8&1.44\\
+2&2.28&0.5184\\
+3&2.568&0.186624\\
+4&2.7408&0.06718464\\\bottomrule
+\end{tabular}
+\end{center}
+你可以看到 $x$ 从 $1$ 逐渐靠近 $3$，函数值越来越小。
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}
+\begin{axis}[width=.76\textwidth,height=6cm,xlabel={$x$},ylabel={$f(x)$},xmin=0.6,xmax=4.6,ymin=-.1,ymax=5.2,grid=major,grid style={draw=gray!15},tick align=outside]
+\addplot[very thick,color=accent,domain=.6:4.6,samples=120]{(x-3)^2};
+\addplot[only marks,mark=*,mark size=2.6pt,color=red!65!black] coordinates {(1,4) (1.8,1.44) (2.28,.5184) (2.568,.186624) (2.7408,.06718464)};
+\node[anchor=south west,font=\small] at (axis cs:3.05,.1) {$x^*=3$};
+\end{axis}
+\end{tikzpicture}
+\caption{从 $x_0=1$ 出发，学习率取 $0.2$ 的几次梯度下降迭代。}\label{fig:quadratic-objective}
+\end{figure}
+
+\subsection{为什么“导数”会变成“梯度”？}
+
+刚才只有一个变量 $x$。线性回归有两个参数 $w,b$，损失函数是 $J(w,b)$。我们分别求偏导
+\[
+\frac{\partial J}{\partial w},\qquad \frac{\partial J}{\partial b}.
+\]
+把这两个数放进一个列向量，就是\textbf{梯度}：
+\begin{equation}\label{eq:gradient-two}
+\boxed{\nabla J(w,b)=
+\begin{pmatrix}
+\partial J/\partial w\\[2pt]\partial J/\partial b
+\end{pmatrix}.}
+\end{equation}
+记号 $\nabla$ 读作 nabla（倒三角）。梯度并不是多了神秘的新计算：它只是把各个参数的偏导数组合起来。
+
+因此，同时更新两个参数的规则是
 \begin{equation}\label{eq:gd-update}
-\boxed{\theta_{k+1}=\theta_k-\eta_k\nabla J(\theta_k),\qquad \eta_k>0.}
+\boxed{\begin{aligned}
+w_{\mathrm{新}}&=w_{\mathrm{旧}}-\eta\frac{\partial J}{\partial w},\\
+b_{\mathrm{新}}&=b_{\mathrm{旧}}-\eta\frac{\partial J}{\partial b}.
+\end{aligned}}
 \end{equation}
-对于含斜率和截距的模型，应先在 $(w_k,b_k)$ 处计算梯度，再同步更新这两个参数。
+\textbf{重要：两个偏导都在更新前的同一组旧参数上计算，然后一起更新。}不要先改 $w$ 再用新的 $w$ 去计算这一步的 $b$。
 
-如果在一次迭代中先更新 $w$，再用新的 $w$ 更新 $b$，得到的便是另一种顺序更新方法。
+\subsection{线性回归：从损失函数求出两个偏导}
 
-\subsection{线性回归中的梯度}
-
-对含截距的简单线性回归，
+回顾第二课使用的函数
 \[
 J(w,b)=\frac1{2m}\sum_{i=1}^{m}(wx_i+b-y_i)^2.
 \]
-由链式法则，
+利用复合函数求导法则：
 \begin{equation}\label{eq:gd-lm-partials}
-\frac{\partial J}{\partial w}=\frac1m\sum_{i=1}^{m}(wx_i+b-y_i)x_i,\quad
-\frac{\partial J}{\partial b}=\frac1m\sum_{i=1}^{m}(wx_i+b-y_i).
+\boxed{\begin{aligned}
+\frac{\partial J}{\partial w}&=\frac1m\sum_{i=1}^{m}(wx_i+b-y_i)x_i,\\
+\frac{\partial J}{\partial b}&=\frac1m\sum_{i=1}^{m}(wx_i+b-y_i).
+\end{aligned}}
 \end{equation}
-对应的同步更新为
-\begin{align}
-w_{k+1}&=w_k-\frac{\eta_k}{m}\sum_i(w_kx_i+b_k-y_i)x_i,\\
-b_{k+1}&=b_k-\frac{\eta_k}{m}\sum_i(w_kx_i+b_k-y_i).
-\end{align}
+读这两个式子时，先看括号中的 $wx_i+b-y_i$：它就是预测值减真实值。对 $w$ 求偏导时，还要乘 $x_i$；对 $b$ 求偏导时不需要乘。然后对所有样本取平均。
 
-取 $D=\{(1,2),(2,4)\}$，以 $(w_0,b_0)=(0,0)$ 为初值，可算得 $\partial_wJ=-5$、$\partial_bJ=-3$。取 $\eta_0=0.1$，一步后参数为
-\begin{equation}\label{eq:gd-first-step}
-(w_1,b_1)=(0.5,0.3).
-\end{equation}
-这只是一次迭代的结果，而非最优解。将其代入损失函数，可以检查此次更新是否确实实现了下降。
+\subsection{手工训练一个两样本模型}
 
-\subsection{学习率与一个可完整分析的例子}
-
-考虑一元二次目标
-\begin{equation}\label{eq:scalar-quadratic}
-J(w)=(w-2)^2.
-\end{equation}
-其唯一最小点为 $w_*=2$。因 $J'(w)=2(w-2)$，梯度下降满足
+这一次只用两组数据：
 \[
-w_{k+1}-2=(1-2\eta)(w_k-2).
+(x_1,y_1)=(0,1),\qquad (x_2,y_2)=(1,3).
 \]
-若学习率 $\eta$ 固定，则递推得到
-\begin{equation}\label{eq:gd-error-recursion}
-w_k-2=(1-2\eta)^k(w_0-2).
+线性模型 $\hat y=wx+b$ 的损失函数为
+\begin{equation}\label{eq:gd-two-points}
+J(w,b)=\frac14[(b-1)^2+(w+b-3)^2].
 \end{equation}
-对任意初值的收敛充要条件为 $\abs{1-2\eta}<1$，也就是
-\begin{equation}\label{eq:scalar-gd-range}
-\boxed{0<\eta<1.}
-\end{equation}
-$\eta=1/2$ 时，除初值已为最优点外，迭代一步即可到达 $w_*$；$\eta=1$ 时通常发生两点振荡；$\eta>1$ 时，除最优初值外，误差绝对值增大。这些判断只对当前目标成立，不能直接拿来作为一般优化问题的步长条件。
+为什么是这两个平方项？$x=0$ 时预测 $b$，残差为 $b-1$；$x=1$ 时预测 $w+b$，残差为 $w+b-3$。样本数 $m=2$，所以 $2m=4$。
 
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}
-\begin{axis}[width=.74\textwidth,height=6.1cm,xlabel={$w$},ylabel={$J(w)$},xmin=-.2,xmax=4.2,ymin=0,ymax=6.4,grid=major,grid style={draw=gray!16},axis line style={draw=black!55},tick align=outside]
-\addplot[very thick,color=accent,domain=-.2:4.2,samples=120]{(x-2)^2};
-\addplot[only marks,mark=*,mark size=2.2pt,color=black] coordinates {(2,0)};
-\node[anchor=south west,font=\small] at (axis cs:2.05,.2) {$w_*=2$};
-\end{axis}
-\end{tikzpicture}
-\caption{二次目标 $J(w)=(w-2)^2$。曲线的极小点可以解析确定；梯度下降能否接近该点取决于步长。}\label{fig:quadratic-objective}
-\end{figure}
-
-\subsection{一般光滑目标的下降估计}
-
-为了从简单例子走向一般结论，加入一个常见条件。
-
-\begin{assumption}[$L$-光滑]\label{ass:smooth}
-函数 $J$ 连续可微，且存在常数 $L>0$，使任意 $u,v\in\R^p$ 满足
-\begin{equation}
-\norm{\nabla J(u)-\nabla J(v)}_2\le L\norm{u-v}_2.
-\end{equation}
-\end{assumption}
-
-\begin{proposition}[下降引理]\label{prop:descent-lemma}
-在假设 \ref{ass:smooth} 下，任意 $u,v$ 满足
-\begin{equation}\label{eq:descent-lemma}
-J(v)\le J(u)+\nabla J(u)\trans(v-u)+\frac L2\norm{v-u}_2^2.
-\end{equation}
-\end{proposition}
-\begin{proof}
-令 $d=v-u$，定义 $g(t)=J(u+td)$。由微积分基本定理，
+直接求导：
 \[
-J(v)-J(u)=\int_0^1\nabla J(u+td)\trans d\,\mathrm dt.
+\frac{\partial J}{\partial w}=\frac12(w+b-3),\qquad
+\frac{\partial J}{\partial b}=\frac12[(b-1)+(w+b-3)].
 \]
-减去 $\nabla J(u)\trans d$，并利用 Cauchy--Schwarz 不等式及梯度的 Lipschitz 条件，
+取初值 $w_0=b_0=0$，学习率 $\eta=0.2$。先在旧参数处计算：
+\[
+\left.\frac{\partial J}{\partial w}\right|_{(0,0)}=-1.5,\qquad
+\left.\frac{\partial J}{\partial b}\right|_{(0,0)}=-2.
+\]
+再一起更新：
 \begin{align*}
-&J(v)-J(u)-\nabla J(u)\trans d\\
-&=\int_0^1[\nabla J(u+td)-\nabla J(u)]\trans d\,\mathrm dt\\
-&\le\int_0^1 Lt\norm d_2^2\,\mathrm dt
-=\frac L2\norm d_2^2.
+w_1&=0-0.2(-1.5)=0.3,\\
+b_1&=0-0.2(-2)=0.4.
 \end{align*}
-即得结论。
-\end{proof}
-
-在式 \eqref{eq:descent-lemma} 中令 $v=u-\eta\nabla J(u)$，得到
-\begin{equation}\label{eq:gd-descent-estimate}
-J(u-\eta\nabla J(u))\le J(u)-\eta\left(1-\frac{L\eta}{2}\right)\norm{\nabla J(u)}_2^2.
+第一次更新后的模型便是
+\begin{equation}\label{eq:gd-first-step}
+\boxed{\hat y=0.3x+0.4.}
 \end{equation}
-因而当 $0<\eta<2/L$ 时，若梯度非零，右侧严格小于 $J(u)$。特别是 $\eta\le1/L$ 时有便于使用的下降下界。\textbf{函数值下降并不单独保证迭代点收敛到全局最优点}；要得出更强结论，还需要目标函数的下界、凸性或其他条件。
-
-\subsection{凸性、驻点与全局最优}
-
-若 $J$ 是可微凸函数，则其一阶条件为
+检查一下：更新前 $J(0,0)=(1+9)/4=2.5$；更新后
 \[
-J(v)\ge J(u)+\nabla J(u)\trans(v-u).
+J(0.3,0.4)=\frac{(-0.6)^2+(-2.3)^2}{4}=1.4125.
 \]
-因此 $\nabla J(u_*)=0$ 蕴含 $J(v)\ge J(u_*)$ 对任意 $v$ 成立，即 $u_*$ 是全局最小点。反之，对于定义在整个 $\R^p$ 上的可微函数，任意局部极小点均满足梯度为零。两者合起来说明：\emph{对于无约束可微凸优化，驻点与全局最小点等价。}
+这一次更新真的使损失下降了。继续计算偏导并更新，参数会逐渐接近 $w=2,b=1$，最终直线为 $\hat y=2x+1$。
 
-非凸情形不能照搬这一结论。例如 $J(w)=-w^2$ 在 $w=0$ 处梯度为零，但该点是局部最大点。实际算法分析必须说明所用结论属于哪一类目标函数。
+\subsection{怎么理解学习率？}
 
-\subsection{后续扩展}
+学习率太小，每次只走一点，训练可能很慢。学习率太大，可能从最小值一侧跳到另一侧，甚至越走越远。\textbf{负梯度提供局部下降方向，并不保证使用任何学习率都能下降。}
 
-当前主要使用固定步长讨论梯度下降。今后可以补充精确线搜索、回溯线搜索、强凸函数的线性收敛，以及牛顿法、拟牛顿法与随机梯度方法，并比较每步代价和精度要求。
+还可以对刚才的一元二次函数做一个简单检查：
+\[
+x_{k+1}-3=(1-2\eta)(x_k-3).
+\]
+所以固定学习率时，要让误差对任意初值逐渐趋于零，需要 $|1-2\eta|<1$，即 $0<\eta<1$。\textbf{这只是对 $f(x)=(x-3)^2$ 的结论，不是所有函数的通用学习率范围。}
+
+\subsection{选读：一般参数的统一记号}
+
+当参数很多时，把它们记成向量 $\boldsymbol\theta$，就可以将所有偏导同时更新写作
+\[
+\boxed{\boldsymbol\theta_{k+1}
+=\boldsymbol\theta_k-\eta_k\nabla J(\boldsymbol\theta_k).}
+\]
+如果 $J$ 是凸可微函数，一个梯度为零的点是全局极小点；但一般非凸函数并没有这样的保证。关于高维步长、曲率、收敛速度的更严格结论属于进阶优化理论，本课不把它们当作入门要求。
+
+\subsection{这一课应当掌握什么}
+
+\begin{enumerate}
+\item 会判断一元函数导数的正负对应怎样的更新方向。
+\item 能根据 $x_{\mathrm{新}}=x_{\mathrm{旧}}-\eta f'(x_{\mathrm{旧}})$ 手算一次迭代。
+\item 知道梯度是偏导数组成的向量，并能同时更新 $w,b$。
+\item 理解“先预测、再计算误差、再求偏导、最后更新参数”的流程。
+\item 知道学习率影响迭代过程，不能只看导数符号。
+\end{enumerate}
+\noindent\textbf{自检：}$f(x)=(x-4)^2$，初值 $x_0=2$，学习率 $\eta=0.1$。第一次更新得到多少？
+
+本课的迭代思想与基础最优化教材中的梯度法一致\cite{liu2020}。
