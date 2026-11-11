@@ -1,6 +1,6 @@
 \section{第二课：线性回归与最小二乘法}\label{ch:least-squares}
 
-\subsection{为什么需要拟合一条直线？}
+\subsection{线性回归的建模背景}
 
 上一课的三组数据恰好满足 $y=2x$，训练误差可以达到零。现实数据往往并不这样整齐。考虑四组为了手算方便而构造的记录：
 \begin{center}
@@ -11,7 +11,7 @@ A&1&2\\ B&2&3\\ C&3&5\\ D&4&4\\\bottomrule
 \end{center}
 如果用一条直线近似这些点，哪条直线算“最好”？线性回归提供函数形式，最小二乘法提供选择直线参数的准则。这里的成绩是人工数据，并不是实际考试成绩。
 
-\subsection{模型中的 $w$ 与 $b$ 是什么？}
+\subsection{一元线性模型与参数}
 
 假设输入和输出之间近似满足
 \begin{equation}\label{eq:simple-lm}
@@ -21,7 +21,7 @@ $x_i$ 是第 $i$ 个输入，$y_i$ 是真实结果，$\hat y_i$ 是预测结果�
 
 例如随手选择 $w=1,b=1$，模型就是 $\hat y=x+1$。当 $x=3$ 时预测为 $4$，而样本真实结果是 $5$。这说明需要有一套评价参数好坏的规则。
 
-\subsection{从残差一步一步走到 MSE}
+\subsection{残差、平方和与均方误差}
 
 定义\textbf{残差}为
 \begin{equation}\label{eq:linear-residual}
@@ -47,13 +47,13 @@ $x_i$&$y_i$&$\hat y_i$&$e_i$\\\midrule
 \end{equation}
 对于这四条数据，当前 $\operatorname{MSE}=(0+0+1+1)/4=0.5$。最小二乘法要求找到 $w,b$，使 RSS（等价地，使 MSE）最小。
 
-\subsection{为什么教材有时把分母写成 $2n$？}
+\subsection{训练目标函数的缩放}
 
 为了计算方便，训练时还常写
 \begin{equation}\label{eq:linear-objective}
 \boxed{J(w,b)=\frac1{2n}\sum_{i=1}^{n}(wx_i+b-y_i)^2.}
 \end{equation}
-它和 MSE 相比多乘了 $1/2$：$\operatorname{MSE}=2J$。\textbf{数值不同，但取到最小值的 $w,b$ 完全相同。}加上 $1/2$ 只是为了消掉平方求导产生的系数 $2$。不能把 $J$ 的数值直接称为 MSE。
+它和 MSE 相比多乘了 $1/2$：$\operatorname{MSE}=2J$。例如，前面临时取 $w=1,b=1$ 时，MSE 为 $0.5$，对应的 $J$ 就是 $0.25$。如果另取参数使 MSE 降到 $0.45$，则对应 $J=0.225$。无论比较 MSE 还是 $J$，参数的优劣次序都没有改变。\textbf{数值不同，但取到最小值的 $w,b$ 完全相同。}加上 $1/2$ 只是为了消掉平方求导产生的系数 $2$。不能把 $J$ 的数值直接称为 MSE。
 
 现在要解决的问题可以写成
 \[
@@ -61,7 +61,7 @@ $x_i$&$y_i$&$\hat y_i$&$e_i$\\\midrule
 \]
 这就是一个二元函数的极小化问题。接下来只用学过的偏导数来求参数。
 
-\subsection{第一步：对截距 $b$ 求偏导}
+\subsection{最小二乘估计：截距}
 
 求 $\partial J/\partial b$ 时，把 $w$ 和样本数据都看成常数。利用链式法则：
 \begin{equation}\label{eq:partial-b}
@@ -85,7 +85,7 @@ w\bar x+b-\bar y&=0.
 \end{equation}
 它告诉我们：\textbf{带截距项的普通最小二乘直线经过均值点 $(\bar x,\bar y)$}。这一性质是求导推出来的，不需要死记。
 
-\subsection{第二步：对斜率 $w$ 求偏导}
+\subsection{最小二乘估计：斜率}
 
 现在把 $b$ 看成常数，有
 \begin{equation}\label{eq:partial-w}
@@ -111,7 +111,7 @@ w\sum_{i=1}^{n}(x_i-\bar x)^2
 \end{equation}
 \textbf{读公式的方法：}分子衡量 $x$ 与 $y$ 围绕均值一起变动的程度；分母衡量 $x$ 自身的变动程度。统计学中也能写作 $\hat w=S_{xy}/S_{xx}$；若样本协方差、方差采用相同的分母约定，则 $\hat w=\widehat{\operatorname{Cov}}(X,Y)/\widehat{\operatorname{Var}}(X)$。
 
-\subsection{第三步：把四组数据真正算出来}
+\subsection{最小二乘估计：手工算例}
 
 回到开头的样本，先求均值：
 \[
@@ -146,11 +146,11 @@ $-0.5$&$-0.5$&0.25&0.25\\
 
 若代入新输入 $x=5$，预测 $\hat y=0.8\times5+1.5=5.5$。它是\emph{模型给出的数学预测}，不是现实成绩；而且 $5$ 超出了训练输入的范围 $[1,4]$，这种预测属于\textbf{外推}，需要格外谨慎。
 
-\subsection{为什么这次偏导为零可以找到最小值？}
+\subsection{最优解的存在与唯一性}
 
 对于一般二元函数，偏导数为零只是驻点条件，并不自动意味着极小值。这里不同：$J(w,b)$ 是若干平方项之和，是关于参数的\textbf{凸二次函数}。若输入不全相同，含截距的两个参数可以唯一确定，因此上面的解是全局最小点。若所有 $x_i$ 相同，斜率无法被唯一识别。
 
-\subsection{选读：多特征时的矩阵公式}
+\subsection{多元线性回归的矩阵形式（选读）}
 
 以上是初学者最应该掌握的内容。若每个样本有很多特征，可将设计矩阵写成 $X\in\mathbb R^{n\times p}$，参数向量写成 $\boldsymbol\beta\in\mathbb R^p$，输出写成 $\boldsymbol y\in\mathbb R^n$。为了处理截距，可在 $X$ 中增加一列全 $1$。
 
@@ -172,7 +172,7 @@ X^{\mathsf T}X\hat{\boldsymbol\beta}=X^{\mathsf T}\boldsymbol y.
 \end{equation}
 \textbf{不要把矩阵公式当作这一课必须背诵的起点。}先熟悉上面四组数据的两次偏导和手算，再学习矩阵形式会更自然。实际数值计算一般使用稳定的最小二乘求解接口，而不是直接显式求逆。最小二乘本身不要求误差必须服从正态分布；把它进一步解释为高斯模型的极大似然估计时，才会附加相关概率假设。
 
-\subsection{这一课应当掌握什么}
+\subsection{本课要点}
 
 \begin{enumerate}
 \item 能区分输入 $x_i$、真实值 $y_i$、预测值 $\hat y_i$ 与参数 $w,b$。
