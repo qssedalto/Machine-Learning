@@ -22,7 +22,7 @@ f'(x)=2(x-3).
 \end{itemize}
 两个情况用一个更新公式统一表示：
 \begin{equation}\label{eq:scalar-update}
-\boxed{x_{\mathrm{新}}=x_{\mathrm{旧}}-\eta f'(x_{\mathrm{旧}}),\qquad \eta>0.}
+\boxed{x_{\text{新}}=x_{\text{旧}}-\eta f'(x_{\text{旧}}),\qquad \eta>0.}
 \end{equation}
 $\eta$ 读作 eta，是\textbf{学习率}。学习率控制一次更新移动多远，不能随便设得很大。为什么公式是减号？因为正导数需要往左走，负导数需要往右走，减去导数恰好同时满足这两点。
 
@@ -77,8 +77,8 @@ x_1=x_0-\eta f'(x_0)=1-0.2(-4)=\boxed{1.8}.
 因此，同时更新两个参数的规则是
 \begin{equation}\label{eq:gd-update}
 \boxed{\begin{aligned}
-w_{\mathrm{新}}&=w_{\mathrm{旧}}-\eta\frac{\partial J}{\partial w},\\
-b_{\mathrm{新}}&=b_{\mathrm{旧}}-\eta\frac{\partial J}{\partial b}.
+w_{\text{新}}&=w_{\text{旧}}-\eta\frac{\partial J}{\partial w},\\
+b_{\text{新}}&=b_{\text{旧}}-\eta\frac{\partial J}{\partial b}.
 \end{aligned}}
 \end{equation}
 \textbf{重要：两个偏导都在更新前的同一组旧参数上计算，然后一起更新。}不要先改 $w$ 再用新的 $w$ 去计算这一步的 $b$。
@@ -158,7 +158,7 @@ x_{k+1}-3=(1-2\eta)(x_k-3).
 
 \begin{enumerate}
 \item 会判断一元函数导数的正负对应怎样的更新方向。
-\item 能根据 $x_{\mathrm{新}}=x_{\mathrm{旧}}-\eta f'(x_{\mathrm{旧}})$ 手算一次迭代。
+\item 能根据 $x_{\text{新}}=x_{\text{旧}}-\eta f'(x_{\text{旧}})$ 手算一次迭代。
 \item 知道梯度是偏导数组成的向量，并能同时更新 $w,b$。
 \item 理解“先预测、再计算误差、再求偏导、最后更新参数”的流程。
 \item 知道学习率影响迭代过程，不能只看导数符号。
