@@ -1,76 +1,157 @@
-\section{从数据到优化问题}\label{ch:foundations}
+\section{第一课：从数据理解机器学习}\label{ch:foundations}
 
-\subsection{统计学习的对象}
+\subsection{先从一个真实会遇到的问题开始}
 
-考虑训练数据
+如果需要判断一个西瓜是不是好瓜，最直接的办法是提前写出规则，例如“色泽青绿且敲声浊响就判为好瓜”。但规则是谁给计算机的？是程序员。现实情况可能远比一两条规则复杂：同样的颜色可能对应不同结果，根蒂、纹理等信息也会影响判断。
+
+另一种方法是先收集已经知道结果的样本，让程序从这些样本中建立预测规则。机器学习研究的正是如何利用已有数据，得到能对新数据进行预测或分析的模型。这里的关键不是“让计算机记住答案”，而是希望它学到能够用于未见数据的规律。
+
+\begin{table}[htbp]\centering
+\caption{为了说明概念而构造的西瓜样本（不是实际数据）}
+\begin{tabular}{llll}\toprule
+色泽&根蒂&敲声&已知结果\\\midrule
+青绿&蜷缩&浊响&好瓜\\
+乌黑&蜷缩&浊响&好瓜\\
+浅白&硬挺&清脆&坏瓜\\
+青绿&硬挺&清脆&坏瓜\\\bottomrule
+\end{tabular}\end{table}
+
+\subsection{什么是样本、特征与标记？}
+
+先换成更容易用数学表达的例子：根据每天的学习时间预测成绩。假设记录了四名学生：
+\begin{center}
+\begin{tabular}{ccc}\toprule
+学生&学习时间 $x$（小时）&成绩 $y$（分）\\\midrule
+A&1&60\\ B&2&70\\ C&3&80\\ D&4&90\\\bottomrule
+\end{tabular}
+\end{center}
+每一行叫作一个\textbf{样本}；学习时间是用于预测的\textbf{特征}（输入 $x$）；已知成绩是\textbf{标记}或响应变量（输出 $y$）。
+
+若有 $m$ 个样本，就可将训练数据写为
 \begin{equation}\label{eq:dataset}
-D=\{(x_i,y_i)\}_{i=1}^{m},\qquad x_i\in\mathcal X,\quad y_i\in\mathcal Y.
+\boxed{D=\{(x_i,y_i)\}_{i=1}^{m}.}
 \end{equation}
-其中 $x_i$ 为输入、$y_i$ 为目标变量，$m$ 为样本数。若输入是 $p$ 维数值向量，则 $x_i\in\R^p$。监督学习利用输入与目标之间的对应关系估计预测函数；无监督学习通常只有输入数据，其目标是发现数据的结构，例如聚类或低维表示\cite[第1章]{zhou2016}。
+$i$ 表示第几个样本，而非指数。如果每个样本包含 $d$ 个数值特征，如学习时间、出勤率和作业得分，则输入变成列向量
+\[
+\boldsymbol{x}_i=(x_{i1},x_{i2},\ldots,x_{id})^{\mathsf T}\in\mathbb R^d.
+\]
+\textbf{先理解单个 $x$，再理解向量 $\boldsymbol{x}$。}西瓜颜色等类别型特征不能直接当作任意实数，需要适当编码，本课暂不展开。
 
-对监督学习而言，回归任务的目标变量通常是连续数值；分类任务的目标变量是有限个类别。分类器可以输出类别，也可以先输出类别的条件概率，再根据决策规则得到最终类别。\emph{是否使用梯度下降并不决定任务类型}；任务类型取决于待预测的变量和问题设定。
+\subsection{监督学习、无监督学习、回归与分类}
 
-以简单线性模型为例，假设类为
+\textbf{监督学习}的训练样本提供了待预测的正确结果。例如已有学习时间和真实成绩，便可以训练成绩预测模型。\textbf{无监督学习}通常没有这样的目标标记，算法可能根据学习时间与娱乐时间等信息把学生分组；聚类就是一种典型任务。所谓“无监督”不是“没有数据”，而是没有提供任务对应的目标标记。
+
+监督学习常见两种任务：
+\begin{center}
+\begin{tabular}{lll}\toprule
+任务&预测目标&例子\\\midrule
+回归（Regression）&连续数值&房价、气温、成绩\\
+分类（Classification）&离散类别&邮件是否为垃圾邮件\\\bottomrule
+\end{tabular}
+\end{center}
+这是按\textbf{预测目标}划分任务，而不是按程序使用了哪种求解器划分。
+
+\subsection{模型、参数、策略、算法不是同一回事}
+
+假设先使用一条过原点的直线预测：
+\begin{equation}\label{eq:model-no-intercept}
+\boxed{\hat y=wx.}
+\end{equation}
+$\hat y$（读作“$y$ 帽”）表示预测值；$x$ 是输入；$w$ 是\textbf{模型参数}，决定这条直线的斜率。若 $w=5$，则学习两小时预测 $10$ 分；若 $w=10$，则预测 $20$ 分。改变 $w$，模型的预测规则就变了。
+
+现在允许直线有截距：
+\[
+\hat y=wx+b,\qquad w,b\in\mathbb R.
+\]
+所有这种形式的函数构成一个\textbf{模型族}（或假设空间）：
 \begin{equation}\label{eq:linear-family}
-\mathcal F=\{f_{w,b}(x)=wx+b:\;w,b\in\R\}.
+\mathcal F=\{f_{w,b}(x)=wx+b\mid w,b\in\mathbb R\}.
 \end{equation}
-模型族 $\mathcal F$ 规定允许采用怎样的函数形式；参数 $w,b$ 选择其中一个具体模型；优化算法则确定怎样利用数据求得参数。三者在概念上应当分开。
+这里的竖线 $\mid$ 读作“满足右边条件的”；$w,b\in\mathbb R$ 表示两个参数可以取实数。\textbf{模型族}告诉我们允许使用什么形式的函数；\textbf{参数}决定最终是哪一条直线；\textbf{算法}负责从数据中寻找合适参数。
 
-\subsection{损失函数和经验风险}
+李航《统计学习方法》常用“模型—策略—算法”概括这件事：\emph{模型}规定学什么，\emph{策略}规定什么算好，\emph{算法}规定怎么求出来\cite[第1章]{lihang2019}。
 
-预测结果未必与观测值相同，需要用损失函数 $L(y,\hat y)$ 量化差异。常见的回归损失为平方损失
+\subsection{预测错了怎么办？先理解损失函数}
+
+为了便于心算，再用三组人工数据：
+\[
+(x_1,y_1)=(1,2),\quad(x_2,y_2)=(2,4),\quad(x_3,y_3)=(3,6).
+\]
+采用模型 $\hat y=wx$，如果先猜 $w=1$，预测就是 $(1,2,3)$，而真实结果为 $(2,4,6)$。我们需要衡量预测与真实值之间的差别。
+
+单个样本的预测误差可写成 $e_i=\hat y_i-y_i$；仅将误差直接相加可能发生正负抵消，因此常把误差平方，定义\textbf{平方损失}
 \begin{equation}\label{eq:squared-loss}
-L(y,\hat y)=(y-\hat y)^2.
+\boxed{L(y_i,\hat y_i)=(y_i-\hat y_i)^2.}
 \end{equation}
-在有限样本上取平均，得到经验风险
+例如真实值为 $4$、预测值为 $2$，损失为 $(4-2)^2=4$；如果预测改为 $3$，损失降为 $1$。平方使较大的误差受到更大惩罚，但也意味着这种方法对离群值可能较敏感。
+
+将所有样本的平方损失求平均，得到\textbf{均方误差}（MSE）：
+\begin{equation}\label{eq:intro-mse}
+\boxed{\operatorname{MSE}(w)=\frac1m\sum_{i=1}^{m}(wx_i-y_i)^2.}
+\end{equation}
+\textbf{辨别三个量：}$L$ 衡量一个样本；MSE 衡量这批样本的平均平方误差；$w$ 是使误差发生变化、等待求解的参数。
+
+\subsection{用最简单的算例完成一次“训练”}
+
+把三个样本代入，设 $J(w)=\operatorname{MSE}(w)$，便有
+\begin{align}
+J(w)&=\frac13\big[(w-2)^2+(2w-4)^2+(3w-6)^2\big]\\
+&=\frac13(1+4+9)(w-2)^2\\
+&=\frac{14}{3}(w-2)^2.
+\end{align}
+平方永远非负，所以当且仅当 $w=2$ 时，$J$ 最小且等于 $0$：
+\begin{equation}\label{eq:first-solution}
+\boxed{w^*=2,\qquad J(w^*)=0,\qquad \hat y=2x.}
+\end{equation}
+这已经是一个完整的训练过程：\textbf{提供数据 $\rightarrow$ 选择模型 $\rightarrow$ 定义损失 $\rightarrow$ 确定参数}。本题靠完全平方便可求解，不需要使用梯度下降。
+
+如果用优化语言，刚才求解的是
+\[
+\min_{w\in\mathbb R}J(w).
+\]
+$\min J$ 指的是\emph{最小函数值}；$\argmin J$ 指的是\emph{让函数取得最小值的参数}。在这里，最小值是 $0$，而使它最小的参数是 $w=2$。要注意区分。
+
+\subsection{再认识通用写法：经验风险}
+
+上面 MSE 是一种具体的损失。若把损失函数统一写为 $L$，模型统一写为 $f$，则训练样本上的\textbf{经验风险}为
 \begin{equation}\label{eq:empirical-risk}
-\widehat R_D(f)=\frac1m\sum_{i=1}^{m}L\bigl(y_i,f(x_i)\bigr).
+\widehat R_D(f)=\frac1m\sum_{i=1}^{m}L(y_i,f(x_i)).
 \end{equation}
-因此，经验风险最小化（empirical risk minimization, ERM）可以写成
+这条看似复杂的公式，其实只是在说“对每个样本计算损失，再求平均”。在平方损失和 $f_w(x)=wx$ 的情况下，它恰好就是前面算过的 MSE。选择使平均损失最小的模型叫作\textbf{经验风险最小化}（ERM）：
 \begin{equation}\label{eq:erm}
 \hat f\in\argmin_{f\in\mathcal F}\widehat R_D(f).
 \end{equation}
-式 \eqref{eq:erm} 说明学习问题如何转化为优化问题，但没有规定一定使用哪种算法。对可以直接求解的模型，可使用解析方法；对难以得到闭式解的模型，常考虑数值迭代方法。
+\textbf{阅读顺序：}先看得懂的数值算例，再把具体的 $w$、MSE 换成一般的 $f$、$L$，就容易理解这两个记号。这里并没有强制规定必须使用哪一种求解算法。
 
-平方损失的优点在于非负、连续可微，且有利于构造最小二乘问题；不足之处是较大的残差会受到二次惩罚，因此估计结果可能对异常值较敏感。损失函数并非只有一种，后文讨论二分类时将使用由概率模型导出的对数损失。
+\subsection{训练误差为零，仍可能预测不好}
 
-\subsection{经验风险与总体风险}
-
-若数据来自未知联合分布 $P_{X,Y}$，则可定义总体风险
-\begin{equation}\label{eq:population-risk}
-R(f)=\E_{(X,Y)\sim P_{X,Y}}\bigl[L(Y,f(X))\bigr].
-\end{equation}
-经验风险用样本均值近似总体期望；两者通常并不相等。训练过程直接接触到的是样本，而预测最终面向未知观测，这种差别是泛化问题的起点\cite[第1章]{lihang2019}。
-
-\begin{proposition}[固定预测函数时经验风险的无偏性]\label{prop:fixed-risk}
-设 $Z_i=(X_i,Y_i)$ 独立同分布，且 $\E\abs{L(Y,f(X))}<\infty$。若预测函数 $f$ 在观测该训练样本之前已固定，则
-\begin{equation}
-\E_D\bigl[\widehat R_D(f)\bigr]=R(f).
-\end{equation}
-\end{proposition}
-\begin{proof}
-由期望的线性性及相同分布，
+刚才 $f(x)=2x$ 完全拟合三条训练记录。但另一个函数
 \[
-\E_D\left[\frac1m\sum_{i=1}^mL(Y_i,f(X_i))\right]
-=\frac1m\sum_{i=1}^m\E[L(Y_i,f(X_i))]=R(f).
+g(x)=2x+(x-1)(x-2)(x-3)
 \]
-此处不需要各损失项彼此独立才能使用期望线性性；独立同分布是给定的典型抽样假设。
-\end{proof}
+也在 $x=1,2,3$ 时分别预测 $2,4,6$，因为乘积中总有一个因子为零。
 
-\begin{remark}
-命题 \ref{prop:fixed-risk} 的关键是 $f$ 在样本被观察前已固定。训练所得的 $\hat f_D$ 依赖于同一批数据，不能把它不加区别地代入上述证明；否则容易错误地认为训练误差天然就是泛化误差的无偏估计。
-\end{remark}
+可是面对没有见过的 $x=4$，两者预测为
+\[
+f(4)=8,\qquad g(4)=8+3\times2\times1=14.
+\]
+\textbf{同样的零训练误差，并不意味着相同的未来预测。}这就是为什么评估模型时不能只检查训练数据。
 
-\subsection{一个不依赖数值优化器的例子}
+如果假设新数据来自某个目标联合分布 $P_{X,Y}$，便可用\textbf{总体风险}描述平均预测损失：
+\begin{equation}\label{eq:population-risk}
+R(f)=\mathbb E_{(X,Y)\sim P_{X,Y}}[L(Y,f(X))].
+\end{equation}
+当前不要求直接计算这条式子。$\mathbb E$ 表示按目标数据分布求期望；它与把固定训练集上若干损失直接求平均不同。真实数据分布通常未知，因此我们会用独立测试数据估计预测表现。
 
-对于 $D=\{(1,2),(2,4),(3,6)\}$，考虑过原点的线性模型 $f_w(x)=wx$。其均方误差为
-\begin{align}
-\widehat R_D(w)
-&=\frac13\bigl[(w-2)^2+(2w-4)^2+(3w-6)^2\bigr]\\
-&=\frac{14}{3}(w-2)^2.
-\end{align}
-由完全平方的非负性可知 $\widehat R_D(w)\ge 0$，且等号仅在 $w=2$ 时成立。因此 $w^*=2$ 是唯一全局最小点，最优值为零。这个例子说明：建立优化问题和选择求解算法是两件事。这里直接观察平方项即可求解，无须调用梯度下降。
+\subsection{这一课应当掌握什么}
 
-\subsection{保留的问题}
+\begin{enumerate}
+\item 样本是记录，特征用于预测，标记是已有的目标答案。
+\item 监督学习有目标标记；无监督学习通常要从无目标标记的数据中发现结构。
+\item 模型规定预测形式，参数决定具体预测，损失函数评判好坏，算法寻找参数。
+\item 对单变量模型 $\hat y=wx$，能够手算 MSE 并通过完全平方找出最优 $w$。
+\item 训练误差小不保证对新数据预测得好。
+\end{enumerate}
+\noindent\textbf{自检：}真实值 $y=5$、预测值 $\hat y=3$，平方损失是多少？为什么把所有误差直接相加可能误导我们？
 
-经验风险最小化何时能得到接近总体风险最小值的模型？这一问题依赖函数类的复杂度、抽样假设及评价方法，不能仅凭目标函数的最优值回答。相关讨论放在第\ref{ch:generalization}节，并在今后的学习中继续补充更严格的泛化界。
+本课概念主要对应周志华《机器学习》第1章、李航《统计学习方法》第1章，以及 ISLP 第2章\cite{zhou2016,lihang2019,james2023}。
