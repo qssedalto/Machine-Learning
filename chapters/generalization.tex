@@ -1,127 +1,205 @@
-\section{模型评价、过拟合与泛化分析}\label{ch:generalization}
+\section{第五课：过拟合、泛化与模型评价}\label{ch:generalization}
 
-\subsection{评价对象：训练误差与总体风险}
+\subsection{训练数据全预测对了，模型就是好模型吗？}
 
-经验风险最小化直接控制的是既有样本上的误差；模型的实际用途通常是对尚未见过的输入进行预测。设训练集为 $D$，经训练得到函数 $\hat f_D$。在平方损失下，训练误差可写为
+先看一个最容易理解的例子。三名学生的教学数据是：
+\begin{center}
+\begin{tabular}{ccc}\toprule
+学生&每天学习时间&成绩\\\midrule
+A&1 小时&60\\ B&2 小时&70\\ C&3 小时&80\\\bottomrule
+\end{tabular}
+\end{center}
+有两个模型都能把这三组训练数据预测正确。
+
+\textbf{模型 A：}根据线性规律预测，$f_A(x)=50+10x$。
+
+\textbf{模型 B：}把“1 小时对应 60、2 小时对应 70、3 小时对应 80”直接记住；遇到其他学习时间统一预测 $60$。
+
+两者在训练集上的 MSE 都为 $0$。现在来了没有参加训练的学生 D，学习时间 $4$ 小时，\emph{假设}真实成绩是 $90$。模型 A 预测 $90$，平方损失为 $0$；模型 B 预测 $60$，平方损失为 $(90-60)^2=900$。
+\begin{center}
+\begin{tabular}{lcc}\toprule
+比较项目&模型 A&模型 B\\\midrule
+训练集 MSE&0&0\\
+新样本预测&90&60\\
+新样本平方损失&0&900\\\bottomrule
+\end{tabular}
+\end{center}
+所以，\textbf{训练误差一样小，不代表新数据上的效果一样好。}这个例子完全是人工构造的，不表示真实成绩一定遵循线性规律。
+
+\subsection{什么是过拟合和欠拟合？}
+
+\textbf{过拟合}（Overfitting）指模型过度适应训练样本的细节，甚至记住其中的噪声和偶然性，结果在未见数据上表现不佳。刚才的记忆模型就是直观示例。
+
+\textbf{欠拟合}（Underfitting）则是模型能力或训练程度不足，没能充分表示数据中的主要规律。例如数据明显呈曲线趋势，却始终只用一条直线拟合，训练误差可能很大，新数据预测也不理想。
+\begin{center}
+\begin{tabularx}{\textwidth}{p{22mm}XX}\toprule
+情况&训练数据表现&未见数据表现\\\midrule
+欠拟合&常常不好&常常不好\\
+合理拟合&能学到主要规律&相对稳定\\
+过拟合&可能特别好&可能明显变差\\\bottomrule
+\end{tabularx}
+\end{center}
+模型更复杂并非一定过拟合，模型更简单也并非一定欠拟合。关键是看它是否适应真实数据规律，以及是否能推广到新数据。
+
+\subsection{训练误差、测试误差、泛化误差有什么区别？}
+
+\textbf{训练误差}在用来训练模型的样本上计算。以平方损失为例：
 \begin{equation}\label{eq:train-mse}
-\operatorname{MSE}_{\mathrm{train}}=\frac1m\sum_{i=1}^m\bigl(y_i-\hat f_D(x_i)\bigr)^2.
+\operatorname{MSE}_{\mathrm{train}}
+=\frac1m\sum_{i=1}^{m}(y_i-\hat f(x_i))^2.
 \end{equation}
-对应的总体预测风险则是
-\begin{equation}\label{eq:generalization-risk}
-R(\hat f_D)=\E_{(X,Y)\sim P}\left[\bigl(Y-\hat f_D(X)\bigr)^2\mid D\right].
-\end{equation}
-式 \eqref{eq:generalization-risk} 对训练集 $D$ 作条件化，以强调：一旦训练完成，$\hat f_D$ 已固定，而新观测来自目标数据分布。我们通常不知道 $P$，因此不能直接计算该期望，只能借助未参与拟合的样本作估计。训练误差低不意味着式 \eqref{eq:generalization-risk} 必然低\cite[第2章]{zhou2016}。
-
-\subsection{欠拟合、过拟合与模型复杂度}
-
-模型容量不足时可能出现欠拟合：即使已充分优化训练目标，也无法表示数据中的主要关系。相反，复杂模型可能捕捉训练集特有的随机波动，使训练损失非常小，而对新数据的预测并不可靠；这属于过拟合的典型表现。两种情况须结合训练集和独立评价集的误差理解，而不能只看参数量或者拟合曲线的形状。
-
-多项式回归能够提供一个直观例子：
-\begin{equation}\label{eq:poly-model}
-\hat f_d(x)=\sum_{j=0}^{d}\beta_jx^j.
-\end{equation}
-对于嵌套多项式函数族，如果每个次数对应的优化问题都被求得全局最小训练平方损失，则增加次数不会增大\emph{训练集上的最优 RSS}。然而，测试误差没有类似的单调性保证。先前练习记录中，一组不同次数模型的误差如下，数据应视为待核验的历史实验记录，而非本次独立重新运行的结果。
-
-\begin{table}[htbp]
-\centering
-\caption{多项式复杂度对拟合结果的影响：先前练习记录}\label{tab:poly-history}
-\begin{tabular}{ccc l}
-\toprule
-次数 $d$ & 训练 MSE & 测试 MSE & 观察\\
-\midrule
-1 & 0.1869 & 0.1740 & 模型表达能力可能不足\\
-8 & 0.0368 & 0.0359 & 本组数据中测试误差较低\\
-25 & 0.0269 & 0.2600 & 训练误差仍低，测试误差明显升高\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-这里的判断是针对给定样本划分的经验观察。对于真实总体风险的比较，还需要讨论抽样不确定性及结果可重复性。不能把一次测试集上的数值差异直接解释为关于所有数据分布的数学定理。
-
-\subsection{平方误差下的偏差—方差分解}
-
-考察固定输入 $x_0$ 的新观测
-\begin{equation}\label{eq:bias-var-model}
-Y_0=f(x_0)+\varepsilon_0.
-\end{equation}
-假设 $\E[\varepsilon_0]=0$、$\Var(\varepsilon_0)=\sigma^2$，且 $\varepsilon_0$ 独立于用于训练 $\hat f_D$ 的数据。训练集 $D$ 随机变化时，$\hat f_D(x_0)$ 也是随机变量。定义
-\begin{align}
-\Bias\bigl(\hat f_D(x_0)\bigr)&=\E_D[\hat f_D(x_0)]-f(x_0),\\
-\Var\bigl(\hat f_D(x_0)\bigr)&=\E_D\left[\bigl(\hat f_D(x_0)-\E_D\hat f_D(x_0)\bigr)^2\right].
-\end{align}
-
-\begin{proposition}[固定输入处的偏差—方差分解]\label{prop:bias-variance}
-在上述条件以及有关二阶矩存在的前提下，
-\begin{equation}\label{eq:bias-var-decomp}
-\boxed{
-\E_{D,\varepsilon_0}\bigl[(Y_0-\hat f_D(x_0))^2\bigr]
-=\Bias\bigl(\hat f_D(x_0)\bigr)^2
-+\Var\bigl(\hat f_D(x_0)\bigr)+\sigma^2.
-}
-\end{equation}
-\end{proposition}
-\begin{proof}
-令 $\mu=\E_D[\hat f_D(x_0)]$，则
+\textbf{测试误差}在未参与训练的数据上计算。如果测试集有 $n$ 个样本，就写为
 \[
-Y_0-\hat f_D(x_0)
-=\underbrace{f(x_0)-\mu}_{\text{常数}}
-+\underbrace{\mu-\hat f_D(x_0)}_{\text{均值为零}}
-+\underbrace{\varepsilon_0}_{\text{均值为零}}.
+\operatorname{MSE}_{\mathrm{test}}=\frac1n\sum_{i=1}^{n}(y_i'-\hat f(x_i'))^2.
 \]
-对等式两边平方并取期望。由于两项随机量均值为零，且 $\varepsilon_0$ 与训练集独立，三个交叉项的期望为零，因此
-\begin{align*}
-\E\bigl[(Y_0-\hat f_D(x_0))^2\bigr]
-&=\bigl(f(x_0)-\mu\bigr)^2
-+\E_D\bigl[(\hat f_D(x_0)-\mu)^2\bigr]
-+\E[\varepsilon_0^2]\\
-&=\Bias\bigl(\hat f_D(x_0)\bigr)^2
-+\Var\bigl(\hat f_D(x_0)\bigr)+\sigma^2.
-\end{align*}
-\end{proof}
+这里的撇号只是提示“它们来自另一批测试数据”。
 
-分解式 \eqref{eq:bias-var-decomp} 展示三种不同来源：模型估计的系统性偏差、训练数据扰动引起的方差，以及在当前输入信息下无法消除的随机噪声。通常较灵活的函数族可以降低逼近偏差，却也可能使估计对有限样本更加敏感；具体变化须结合问题和算法验证\cite[第2章]{james2023}。这里讨论的是平方损失，不应无条件推广到准确率或所有其他指标。
+\textbf{泛化误差}关心模型对目标数据分布中的新观测的平均损失。假设训练得到的 $\hat f$ 已经确定，定义
+\begin{equation}\label{eq:generalization-risk}
+R(\hat f)=\mathbb E_{(X,Y)\sim P}[L(Y,\hat f(X))].
+\end{equation}
+$\mathbb E$ 是期望，$P$ 是目标数据的联合分布。我们通常不知道这个分布，所以难以直接计算 $R(\hat f)$；独立测试集上的平均损失只是它的\textbf{统计估计}。
 
-\subsection{留出法与交叉验证}
+\begin{center}
+\begin{tabularx}{\textwidth}{p{24mm}XX}\toprule
+名称&在哪些数据上计算？&能告诉我们什么？\\\midrule
+训练误差&训练时见过的样本&拟合这些样本的程度\\
+测试误差&训练与选择时未使用的样本&对新数据表现的有限样本估计\\
+泛化风险&目标数据的概率分布&理论上的平均预测损失\\\bottomrule
+\end{tabularx}
+\end{center}
 
-最简单的评价方法是将数据分为训练集 $D_{\mathrm{tr}}$ 与测试集 $D_{\mathrm{te}}$。对需要选择模型复杂度和超参数的实验，通常还应设置验证数据，或者在训练部分内部进行交叉验证。测试集主要负责最终评价，不应用于反复选择模型。
+\subsection{如何划分训练集、验证集和测试集？}
 
-在 $K$ 折交叉验证中，将训练数据划分为不重叠的 $K$ 份 $D_1,\ldots,D_K$。每次用其余 $K-1$ 份训练，在 $D_k$ 上记录平均损失 $E_k$。当各折大小相同时，
+\textbf{训练集}用于确定模型参数，例如线性回归中的 $w,b$。\textbf{验证集}用于比较模型或选择超参数，例如选择多项式次数、学习率。\textbf{测试集}在模型选择完成后用于最终评估，尽量不要反复用于调参。
+
+假设有 $10\,000$ 条样本，一种\emph{示例}划分是训练集 $7\,000$ 条、验证集 $1\,500$ 条、测试集 $1\,500$ 条（$70\%/15\%/15\%$）。这不是固定标准：样本量、时间顺序、是否有重复测量等都会影响合理划分。
+
+为什么不能在测试集上反复挑选模型？因为它虽然没有参与梯度计算，却已经参与了模型选择，最后的测试成绩可能因此偏于乐观。测试集最重要的价值是\textbf{保持独立}。
+
+\subsection{留出法与五折交叉验证}
+
+\textbf{留出法}（Hold-out）是把数据拆成相互不重叠的训练部分与评价部分，例如 $700$ 条训练、$300$ 条测试。不同随机划分可能带来不同结果。
+
+\textbf{$K$ 折交叉验证}（$K$-Fold Cross Validation）利用多次划分缓解偶然性。以 $5$ 折为例：
+\begin{enumerate}
+\item 将训练部分划分为五份，记作第 1～5 折。
+\item 第一次用第 2～5 折训练，用第 1 折验证。
+\item 第二次用第 1、3、4、5 折训练，用第 2 折验证。
+\item 依次轮换，使每一折都恰好作为一次验证集。
+\item 把五次验证误差汇总，用来比较模型。
+\end{enumerate}
+当各折样本量相同时，交叉验证平均误差为
 \begin{equation}\label{eq:kfold}
-\operatorname{CV}(K)=\frac1K\sum_{k=1}^{K}E_k.
+\boxed{E_{\mathrm{CV}}=\frac1K\sum_{k=1}^{K}E_k.}
 \end{equation}
-若各折样本数 $m_k$ 不完全相同，且需要计算所有折外预测损失的样本平均，则应使用
+$E_k$ 表示第 $k$ 次验证的平均误差。若各折样本数 $n_k$ 不同，若希望求所有折外预测的样本平均，则使用加权式
 \begin{equation}\label{eq:kfold-weighted}
-\operatorname{CV}_{\mathrm{weighted}}=\frac{\sum_{k=1}^{K}m_kE_k}{\sum_{k=1}^{K}m_k}.
+E_{\mathrm{CV,weighted}}=\frac{\sum_k n_kE_k}{\sum_k n_k}.
 \end{equation}
-5 折、10 折是常见选择，但并非对所有数据都最优。分折方式应尊重数据的依赖结构：时间序列、同一受试者重复观测、按组聚集的数据，都可能需要特殊的分割方法\cite[第5章]{james2023}。
+五折、十折都很常见，但交叉验证不是无条件“越多折越好”。时间序列、同一学生多次记录等具有依赖关系的数据，还需要符合数据结构的拆分方式。
 
-除样本直接交叉出现外，还应注意预处理引起的数据泄漏。标准化系数、缺失值填补规则、特征选择等，只能在每一轮的训练折上拟合，再应用于对应验证折；不能预先用所有数据计算，然后再进行交叉验证。
+\subsection{容易忽略的数据泄漏}
 
-\subsection{二分类的常用评价指标}
+假设准备把特征标准化：
+\[
+z=\frac{x-\mu}{\sigma}.
+\]
+若先用\emph{全部数据}计算均值 $\mu$ 和标准差 $\sigma$，然后才划分训练与测试，那么测试集的信息已经提前进入训练流程，这叫作\textbf{数据泄漏}（Data Leakage）。
 
-\begin{table}[htbp]
-\centering
-\caption{二分类混淆矩阵}\label{tab:confusion}
-\begin{tabular}{lcc}
-\toprule
- & 实际正类 & 实际负类\\
-\midrule
-预测正类 & $TP$ & $FP$\\
-预测负类 & $FN$ & $TN$\\
-\bottomrule
+正确的基本步骤是：\emph{只在训练数据上学习预处理参数，再用这些参数转换验证集和测试集。}交叉验证时也必须在\emph{每一折的训练部分}重新拟合标准化器。数据泄漏可能让评价结果看起来比实际部署效果更好。
+
+\subsection{偏差与方差：先理解含义，再看公式}
+
+为什么增加模型复杂度通常能降低训练误差，却不一定改善测试效果？一个常用的分析视角是\textbf{偏差—方差权衡}。
+
+\textbf{偏差（Bias）}描述模型的平均预测相对于真实规律的系统性偏离。例如真实规律是一条弯曲的曲线，却坚持用直线去拟合，就可能存在较大偏差。
+
+\textbf{方差（Variance）}描述模型对训练数据变化的敏感程度。换一批训练样本，模型预测就发生很大变化，通常意味着较高的方差。
+
+\textbf{不可约误差}则来自观测中的随机噪声，即使知道真实规律也未必能把每个样本预测到完全准确。
+
+在适当条件下，例如固定输入 $x$、$Y=f(x)+\varepsilon$、噪声均值为零、方差为 $\sigma^2$ 且与训练过程独立，平方预测误差可以分解为
+\begin{equation}\label{eq:bias-var-decomp}
+\mathbb E[(Y-\hat f_D(x))^2]
+=\operatorname{Bias}(\hat f_D(x))^2
++\operatorname{Var}(\hat f_D(x))+\sigma^2.
+\end{equation}
+这里的期望要同时对重复抽取的训练数据与新的观测噪声考虑。\textbf{初学时只需理解三项各代表什么，不能把这条式子无条件套用到准确率、交叉熵等指标。}模型灵活性与偏差、方差的关系是常见趋势，而不是所有模型的单调定理\cite[第2章]{james2023}。
+
+\subsection{回归模型怎么评价？}
+
+最常用的指标之一仍是 MSE：
+\[
+\operatorname{MSE}=\frac1n\sum_{i=1}^{n}(y_i-\hat y_i)^2.
+\]
+例如真实值为 $(10,20,30)$，预测为 $(11,18,33)$，平方误差就是 $1,4,9$，所以 $\operatorname{MSE}=(1+4+9)/3=14/3$。比较模型时，必须说明是在训练集、验证集还是测试集上算的 MSE。
+
+\subsection{分类模型怎么评价？先读懂混淆矩阵}
+
+分类模型可以使用\textbf{准确率}（Accuracy）：
+\[
+\operatorname{Accuracy}=\frac{\text{预测正确的样本数}}{\text{总样本数}}.
+\]
+但准确率不总够用。假设 $100$ 个样本只有 $5$ 个正类，全部预测为负类也有 $95\%$ 准确率，却一个正类也没有找出。
+
+二分类中常用四个缩写：
+\begin{itemize}
+\item $TP$：实际为正，预测也为正（真正例）；
+\item $FP$：实际为负，误报为正（假正例）；
+\item $TN$：实际为负，预测也为负（真反例）；
+\item $FN$：实际为正，漏报为负（假反例）。
+\end{itemize}
+\begin{table}[htbp]\centering
+\caption{混淆矩阵的一个教学算例}\label{tab:confusion}
+\begin{tabular}{lcc}\toprule
+&预测正类&预测负类\\\midrule
+实际正类&$TP=24$&$FN=16$\\
+实际负类&$FP=6$&$TN=54$\\\bottomrule
+\end{tabular}\end{table}
+
+\textbf{查准率（Precision）}回答“预测为正的样本中，有多少是真的正？”：
+\[
+\operatorname{Precision}=\frac{TP}{TP+FP}
+=\frac{24}{24+6}=80\%.
+\]
+\textbf{查全率（Recall）}回答“真正的正类中，有多少被找到了？”：
+\[
+\operatorname{Recall}=\frac{TP}{TP+FN}
+=\frac{24}{24+16}=60\%.
+\]
+如果希望同时考虑两者，常用它们的调和平均 $F_1$：
+\[
+\boxed{F_1=\frac{2PR}{P+R}
+=\frac{2\times0.8\times0.6}{0.8+0.6}\approx0.686.}
+\]
+在这条式子中，$P$ 和 $R$ 分别是 Precision 与 Recall，\emph{不是}概率分布符号。当分母为零时，需要另行规定指标处理规则。
+
+ROC 曲线通过改变分类阈值，绘制真正例率 $TPR=TP/(TP+FN)$ 与假正例率 $FPR=FP/(FP+TN)$ 的关系；AUC 是曲线下面积，常用于衡量排序能力。它们比一个固定阈值的准确率提供不同的信息。
+
+\subsection{一次多项式实验为什么有帮助？}
+
+考虑构造数据 $y=\sin x+\varepsilon$，其中 $\varepsilon$ 是均值为零的随机扰动。用不同次数的多项式拟合，教学记录中曾得到以下一组\textbf{固定数据划分下的示例结果}：
+\begin{table}[htbp]\centering
+\caption{不同模型复杂度下的一次教学实验记录}\label{tab:polynomial-compare}
+\begin{tabular}{rrrl}\toprule
+多项式次数&训练 MSE&测试 MSE&观察\\\midrule
+1&0.1869&0.1740&模型较简单，误差偏高\\
+8&0.0368&0.0359&本次训练和测试误差均较低\\
+25&0.0269&0.2600&训练更好，测试明显变差\\\bottomrule
 \end{tabular}
 \end{table}
+这组数值仅说明这一教学设置下的现象，不是所有数据都满足的规律。正式实验需保存生成数据的随机种子、划分、预处理与运行环境，才能独立复现。比较多个候选模型时，应先通过验证集或交叉验证选择，最终测试集留作独立评估。
 
-在相应分母非零时，准确率、精确率、召回率与 $F_1$ 分数定义为
-\begin{align}
-\operatorname{Accuracy}&=\frac{TP+TN}{TP+TN+FP+FN},\\
-\operatorname{Precision}&=\frac{TP}{TP+FP},\\
-\operatorname{Recall}&=\frac{TP}{TP+FN},\\
-F_1&=\frac{2\operatorname{Precision}\cdot\operatorname{Recall}}{\operatorname{Precision}+\operatorname{Recall}}
-=\frac{2TP}{2TP+FP+FN}.
-\end{align}
-当类别比例严重不平衡时，Accuracy 可能掩盖正类识别能力。例如 100 个样本仅有 5 个正类，若全部预测为负类，准确率仍是 $95\%$，但召回率为零。指标选择必须结合漏报、误报及实际决策代价。
+\subsection{这一课应当掌握什么}
 
-\subsection{评价结果的统计解释}
+\begin{enumerate}
+\item 训练误差小不保证泛化误差小；测试误差只是泛化风险的估计。
+\item 理解过拟合与欠拟合，并能用学生成绩例子解释区别。
+\item 分清训练集、验证集、测试集的角色和数据泄漏风险。
+\item 能口头复述五折交叉验证，并会计算平均验证误差。
+\item 能从混淆矩阵手算 Precision、Recall 与 $F_1$。
+\end{enumerate}
+\noindent\textbf{自检：}为什么“先对全体样本做标准化，再分训练集与测试集”可能导致不真实的高分？为什么训练误差从 $0.0368$ 降到 $0.0269$ 并不意味着模型变好？
 
-测试误差只是总体风险的估计量。单次随机划分得到的数值并不天然具有很强的稳定性。在比较模型时，可以重复合理的数据划分或报告多折表现的变动；更重要的是说明抽样单位、是否存在数据泄漏以及评价指标的适用前提。若模型经过多轮调参，最终测试集应保持独立，避免选择偏差。对于分布漂移等情形，上述方法所估计的目标风险可能不再等同于实际部署风险。
+主要参考周志华《机器学习》第2章、李航《统计学习方法》模型评估部分及 ISLP 第2章\cite{zhou2016,lihang2019,james2023}。

@@ -1,7 +1,22 @@
-# 机器学习 · LaTeX 项目文件指南
+# 机器学习 · 五课循序渐进学习笔记
 
-> **这个仓库放的是什么？** 一份可持续扩展的中文机器学习研究笔记：用 LaTeX 排版数学推导，用 Python 保存数值实验，用 BibLaTeX 管理参考文献。  
+> **这个仓库放的是什么？** 一份依照前五课教学内容重构的中文机器学习学习笔记：从生活例子、手工计算走向通用数学公式，再使用 Python 验证。保留关键推导和必要的成立条件，不以复杂记号代替解释。  
 > **从哪里开始？** 要读成品看 [main.pdf](main.pdf)；要改正文进入 [chapters/](chapters/)；要改版式打开 [config/preamble.tex](config/preamble.tex)；要改摘要打开 [main.tex](main.tex)。
+
+## 从哪里开始学？
+
+正文按教学顺序组织。推荐先看每章的**为什么、数字例子和计算步骤**，再看“选读”的矩阵表达式或进阶边界。
+
+| 顺序 | 课程 | 先掌握什么 | 正文 |
+| --- | --- | --- | --- |
+| 1 | 数据到机器学习 | 样本、标记、模型、参数、平方损失、MSE | [第一课](chapters/foundations.tex) |
+| 2 | 线性回归与最小二乘 | 残差、两次偏导、斜率与截距的手算 | [第二课](chapters/least_squares.tex) |
+| 3 | 梯度下降 | 导数的正负、学习率、手算迭代 | [第三课](chapters/gradient_methods.tex) |
+| 4 | 逻辑回归 | Sigmoid、概率、伯努利似然、交叉熵 | [第四课](chapters/logistic_regression.tex) |
+| 5 | 模型评价 | 过拟合、测试集、交叉验证、混淆矩阵 | [第五课](chapters/generalization.tex) |
+| 实践 | 公式转 Python | 与手算核对、重复迭代、独立运行脚本 | [实验指南](chapters/experiments.tex) |
+
+**请注意：** 这份笔记中的学生成绩、西瓜分类等都是为了教学而构造的例子。曲线与训练结果是否能泛化，必须通过独立数据检验。
 
 ## 项目是怎样组成的
 
@@ -28,9 +43,13 @@ Machine-Learning/
 │   ├── gradient_methods.tex       梯度下降与步长
 │   ├── logistic_regression.tex    逻辑回归与对数损失
 │   ├── generalization.tex         模型评价、过拟合和泛化
-│   ├── experiments.tex            数值算例与代码展示
-│   └── open_questions.tex         后续研究方向
+│   ├── experiments.tex            手工算例与 Python 验证
+│   └── open_questions.tex         选读：下一阶段学习路线
 ├── code/
+│   ├── grid_search_intro.py       第一课：网格搜索入门
+│   ├── ordinary_least_squares_intro.py 第二课：最小二乘手算对应
+│   ├── gradient_descent_intro.py  第三课：单变量梯度下降
+│   ├── logistic_regression_intro.py 第四课：逻辑回归一步更新
 │   ├── linear_regression_demo.py  解析最小二乘 vs. 梯度下降
 │   ├── logistic_gradient_check.py 逻辑回归解析梯度的数值校验
 │   └── polynomial_comparison.py   多项式模型复杂度对比
@@ -49,7 +68,7 @@ Machine-Learning/
 | [`references.bib`](references.bib) | 以 BibTeX/BibLaTeX 条目保存教材与著作等文献信息；正文用 `\cite{条目键}` 引用。 | 添加、核对或修订文献元数据时。 |
 | [`requirements.txt`](requirements.txt) | Python 数值实验的依赖清单；当前列出 NumPy 版本范围。 | 实验确实引入新依赖时。 |
 | [`.gitignore`](.gitignore) | 排除 `.aux`、`.log`、`.bbl` 等 LaTeX 辅助文件，以及 Python 缓存、虚拟环境和编辑器临时文件；**不忽略** `main.pdf`。 | 调整哪些生成文件需要跟踪时。 |
-| [`.github/workflows/latex.yml`](.github/workflows/latex.yml) | GitHub Actions 工作流：安装 Python 依赖、运行三个实验脚本，在 TeX Live 环境中用 XeLaTeX/Biber 构建 PDF，上传构建产物；满足条件时把变化后的 `main.pdf` 提交回 `main`。 | 修改 CI、编译环境、自动检查或 PDF 发布流程时。 |
+| [`.github/workflows/latex.yml`](.github/workflows/latex.yml) | GitHub Actions 工作流：安装 Python 依赖、运行七个 Python 实验脚本，在 TeX Live 环境中用 XeLaTeX/Biber 构建 PDF，上传构建产物；满足条件时把变化后的 `main.pdf` 提交回 `main`。 | 修改 CI、编译环境、自动检查或 PDF 发布流程时。 |
 
 ## 02 / config：全文排版与封面
 
@@ -60,7 +79,7 @@ Machine-Learning/
 
 ## 03 / chapters：八个正文章节
 
-每个文件对应一个研究主题，章节内容通过 `main.tex` 中的 `\input{chapters/文件名}` 进入最终文档。
+每个文件对应一个由浅入深的课程主题，章节内容通过 `main.tex` 中的 `\input{chapters/文件名}` 进入最终文档。
 
 | 文件 | 正文内容 | 主要关注点 |
 | --- | --- | --- |
@@ -73,12 +92,16 @@ Machine-Learning/
 | [`chapters/experiments.tex`](chapters/experiments.tex) | 解析算例、数值结果的说明及源代码片段。 | **实验的书面解释**，并使用 `\lstinputlisting` 从 `code/` 读取 Python 代码。 |
 | [`chapters/open_questions.tex`](chapters/open_questions.tex) | 正则化、进一步的数值优化、统计推断等待扩展议题。 | 记录尚未展开的研究问题，而非把它们当作已证明结论。 |
 
-## 04 / code：三个独立的 Python 实验
+## 04 / code：七个可运行的 Python 实验
 
-这些脚本用于核对算法思想；**LaTeX 编译不会自动执行 Python**。GitHub Actions 会单独运行它们。
+其中四个是对应教学手算的新增入门脚本，另三个是保留的数值实验；**LaTeX 编译不会自动执行 Python**。GitHub Actions 会单独运行它们。
 
 | 文件 | 做了什么 | 对应正文 |
 | --- | --- | --- |
+| [`code/grid_search_intro.py`](code/grid_search_intro.py) | 从候选斜率中搜索 MSE 最小值，核对 $w=2$。 | 第一课 |
+| [`code/ordinary_least_squares_intro.py`](code/ordinary_least_squares_intro.py) | 使用四样本表格计算斜率、截距与 MSE。 | 第二课 |
+| [`code/gradient_descent_intro.py`](code/gradient_descent_intro.py) | 打印 $f(x)=(x-3)^2$ 的迭代轨迹。 | 第三课 |
+| [`code/logistic_regression_intro.py`](code/logistic_regression_intro.py) | 用单个样本核对交叉熵梯度和一步更新。 | 第四课 |
 | [`code/linear_regression_demo.py`](code/linear_regression_demo.py) | 用 NumPy 的最小二乘求解与手写全批量梯度下降比较回归参数。 | `least_squares.tex`、`gradient_methods.tex`、`experiments.tex` |
 | [`code/logistic_gradient_check.py`](code/logistic_gradient_check.py) | 通过中心差分近似梯度，检查逻辑回归负对数似然的解析梯度。 | `logistic_regression.tex` |
 | [`code/polynomial_comparison.py`](code/polynomial_comparison.py) | 在固定随机种子的构造数据上比较不同次数多项式回归的误差。 | `generalization.tex`、`experiments.tex` |
@@ -90,7 +113,7 @@ Machine-Learning/
 | 文件 | 它的作用 |
 | --- | --- |
 | [`appendices/notation.tex`](appendices/notation.tex) | 统一列出 `m`、`p`、`X`、`J(θ)`、经验风险等数学符号及其约定，减少跨章节歧义。 |
-| [`appendices/development_log.tex`](appendices/development_log.tex) | 记录文稿版本、修订时间与内容变更；目前含 v0.1 的初始记录。 |
+| [`appendices/development_log.tex`](appendices/development_log.tex) | 记录文稿版本、修订时间与内容变更；目前含初始建立和 v0.3 教学重构记录。 |
 
 ## 常见修改：该打开哪个文件？
 
@@ -120,6 +143,10 @@ Machine-Learning/
 
 ```sh
 python -m pip install -r requirements.txt
+python code/grid_search_intro.py
+python code/ordinary_least_squares_intro.py
+python code/gradient_descent_intro.py
+python code/logistic_regression_intro.py
 python code/linear_regression_demo.py
 python code/logistic_gradient_check.py
 python code/polynomial_comparison.py
@@ -131,10 +158,10 @@ latexmk -xelatex -interaction=nonstopmode -file-line-error main.tex
 **GitHub 自动构建**
 
 - 修改正文、配置、附录、代码、依赖、文献或工作流文件，推送到 `main` 后会触发 [自动构建](.github/workflows/latex.yml)；单独修改本 README **不触发**该工作流。
-- 工作流会检查三个 Python 实验并生成 PDF，上传为 Actions 构建产物。
+- 工作流会检查七个 Python 实验并生成 PDF，上传为 Actions 构建产物。
 - 由 `main` 分支的 `push` 触发时，如 PDF 有变化，工作流尝试自动更新仓库中的 `main.pdf`；Pull Request 和手动触发不会自动回写 PDF。
 - GitHub Actions 的系统字体与中国科技云可能不同。当前工作流仍安装 Noto 字体包，但正文使用的中文字体由 `ctexart` 设置，不再依赖手动指定 Noto 字体名称。
 
 ---
 
-**维护原则**：论文内容写在 `chapters/`，排版规则放在 `config/`，可运行实验放在 `code/`，文献条目放在 `references.bib`。修改数学结论时，保留成立条件与证据；新增文件时，及时更新这份指南。
+**维护原则**：教学正文写在 `chapters/`，排版规则放在 `config/`，可运行实验放在 `code/`，文献条目放在 `references.bib`。修改数学结论时，保留成立条件与证据；新增文件时，及时更新这份指南。

@@ -1,115 +1,191 @@
-\section{二分类的概率建模与对数损失}\label{ch:logistic}
+\section{第四课：逻辑回归与二分类}\label{ch:logistic}
 
-\subsection{从线性得分到条件概率}
+\subsection{成绩是数值，“能否通过”却是类别}
 
-考虑二分类标签 $Y\in\{0,1\}$，线性得分 $z=x\trans\beta$ 可取任意实数，因此不能直接作为概率。逻辑回归使用 Logistic 函数
-\begin{equation}\label{eq:sigmoid}
-\sigma(z)=\frac{1}{1+\mathrm e^{-z}}
-\end{equation}
-把实数映射到开区间 $(0,1)$，并定义
-\begin{equation}\label{eq:logistic-model}
-\pi(x)=\Prob(Y=1\mid X=x)=\sigma(x\trans\beta).
-\end{equation}
-其中 $x$ 可以含截距对应的常数分量。这里采用 $\pi$ 表示条件概率，以免与特征维数 $p$ 混淆。
-
-由 \eqref{eq:sigmoid} 可得
+第二课用 $\hat y=wx+b$ 预测数值。如果现在改成预测学生能否通过考试，真实标记只有两种：
 \[
-\frac{\pi(x)}{1-\pi(x)}=\mathrm e^{x\trans\beta},
+y=\begin{cases}1,&\text{通过考试},\\0,&\text{未通过考试}.\end{cases}
 \]
-因此
-\begin{equation}\label{eq:log-odds}
-\boxed{\log\frac{\pi(x)}{1-\pi(x)}=x\trans\beta.}
+例如某个教学数据集如下：
+\begin{center}
+\begin{tabular}{cc}\toprule
+学习时间 $x$（小时）&是否通过 $y$\\\midrule
+1&0\\2&0\\3&0\\4&1\\5&1\\\bottomrule
+\end{tabular}
+\end{center}
+我们希望估计的是“通过的概率”。但直接把直线当作概率会出问题：假设线性预测为 $\hat y=0.3x-0.4$，则 $x=1$ 时得到 $-0.1$，$x=6$ 时得到 $1.4$。概率却必须在 $0$ 到 $1$ 之间。
+
+因此，逻辑回归并不是直接把线性输出作为概率，而是\textbf{先计算线性得分，再用另一个函数把它映射到 $(0,1)$}。
+
+\subsection{Sigmoid 函数怎么把实数变成概率？}
+
+定义 Logistic（常称 Sigmoid）函数：
+\begin{equation}\label{eq:sigmoid}
+\boxed{\sigma(z)=\frac{1}{1+e^{-z}},\qquad z\in\mathbb R.}
 \end{equation}
-模型对\emph{对数几率}作线性建模。这也解释了 Logistic Regression 虽然沿用“回归”一词，却主要用于分类任务\cite[第3章]{zhou2016}。
-
-\subsection{Sigmoid 的导数}
-
-对式 \eqref{eq:sigmoid} 求导，
-\begin{align}
-\sigma'(z)
-&=-(1+\mathrm e^{-z})^{-2}(-\mathrm e^{-z})\\
-&=\frac{\mathrm e^{-z}}{(1+\mathrm e^{-z})^2}\\
-&=\boxed{\sigma(z)[1-\sigma(z)]}.\label{eq:sigmoid-derivative}
-\end{align}
-因此 Sigmoid 单调递增，且 $0<\sigma'(z)\le1/4$。\textbf{Sigmoid 并不是在整个实数轴上凸的}：其二阶导数符号在 $z=0$ 两侧发生改变。逻辑回归的凸性来自负对数似然关于参数的结构，而非 Sigmoid 函数自身的全局凸性。
-
-\begin{figure}[htbp]
-\centering
+$e$ 是自然对数的底数。我们不需要一开始就背下曲线，只需代几个数：
+\[
+\sigma(0)=0.5,\quad
+\sigma(2)\approx0.8808,\quad
+\sigma(-2)\approx0.1192.
+\]
+$z$ 越大，输出越接近 $1$；$z$ 越小，越接近 $0$；任何有限 $z$ 的输出都严格在两者之间。
+\begin{figure}[htbp]\centering
 \begin{tikzpicture}
-\begin{axis}[width=.74\textwidth,height=6cm,xlabel={$z$},ylabel={$\sigma(z)$},xmin=-6,xmax=6,ymin=0,ymax=1.05,grid=major,grid style={draw=gray!16},ytick={0,0.25,0.5,0.75,1},axis line style={draw=black!55}]
-\addplot[very thick,color=accent,domain=-6:6,samples=160]{1/(1+exp(-x))};
+\begin{axis}[width=.76\textwidth,height=6cm,xlabel={$z$},ylabel={$\sigma(z)$},xmin=-6,xmax=6,ymin=0,ymax=1.04,grid=major,grid style={draw=gray!15},ytick={0,.25,.5,.75,1}]
+\addplot[very thick,color=accent,domain=-6:6,samples=140]{1/(1+exp(-x))};
 \addplot[densely dashed,color=black!45] coordinates {(-6,.5) (6,.5)};
 \end{axis}
 \end{tikzpicture}
-\caption{Logistic 函数将线性得分映射为二分类概率。$z=0$ 时输出为 $0.5$。}\label{fig:sigmoid}
+\caption{Sigmoid 函数：任意实数输入，输出一个介于 $0$ 和 $1$ 之间的数。}\label{fig:sigmoid}
 \end{figure}
 
-\subsection{伯努利似然与交叉熵}
+\subsection{把线性模型代进去，就得到逻辑回归}
 
-对样本 $(x_i,y_i)$，设 $Y_i\mid x_i\sim\operatorname{Bernoulli}(\pi_i)$，其中 $\pi_i=\sigma(x_i\trans\beta)$。在给定输入后，若样本标签条件独立，则条件似然为
+设 $z=wx+b$，用 $\hat p$ 表示预测“通过”的概率：
+\begin{equation}\label{eq:logistic-model}
+\boxed{\hat p=P(Y=1\mid X=x)=\sigma(wx+b)=\frac{1}{1+e^{-(wx+b)}}.}
+\end{equation}
+例如 $w=1,b=0,x=2$，则 $\hat p=\sigma(2)\approx0.8808$，可解读为模型预测通过概率约 $88.08\%$。是否最终输出类别 $1$，还需要指定阈值；常见做法是概率不小于 $0.5$ 时预测类别 $1$。
+
+\subsection{为什么叫“对数几率回归”？（理解即可）}
+
+将概率简记为 $p=\sigma(wx+b)$，那么
+\[
+p=\frac{e^{wx+b}}{1+e^{wx+b}},\qquad
+1-p=\frac{1}{1+e^{wx+b}}.
+\]
+两式相除，再取自然对数：
+\[
+\frac{p}{1-p}=e^{wx+b},\qquad
+\boxed{\ln\frac{p}{1-p}=wx+b.}
+\]
+这便是对数几率（log-odds）与线性特征的关系：
+\begin{equation}\label{eq:log-odds}
+\log\frac{p}{1-p}=wx+b.
+\end{equation}
+因此逻辑回归对\textbf{概率的对数几率}做线性建模，而不是要求概率本身随 $x$ 线性变化\cite[第3章]{zhou2016}。
+
+\subsection{概率有了，参数怎么训练？}
+
+对于第 $i$ 个样本，真实标签 $y_i$ 只能是 $0$ 或 $1$，预测正类概率为 $p_i=\sigma(wx_i+b)$。那么
+\[
+P(Y_i=1\mid x_i)=p_i,\qquad P(Y_i=0\mid x_i)=1-p_i.
+\]
+两种情况可合并为伯努利分布的概率质量函数：
+\begin{equation}\label{eq:bernoulli}
+P(y_i\mid x_i)=p_i^{y_i}(1-p_i)^{1-y_i}.
+\end{equation}
+看一下公式为什么成立：若 $y_i=1$，右边为 $p_i$；若 $y_i=0$，右边为 $1-p_i$。
+
+在给定特征后各样本类别条件独立的假设下，整批已观测标签的条件似然是
 \begin{equation}\label{eq:logit-likelihood}
-\mathcal L(\beta)=\prod_{i=1}^{m}\pi_i^{y_i}(1-\pi_i)^{1-y_i}.
+\mathcal L(w,b)=\prod_{i=1}^{m}p_i^{y_i}(1-p_i)^{1-y_i}.
 \end{equation}
-取对数、乘以负号并按样本平均，得到
+极大似然估计希望找到 $w,b$，使观测到这些标签的条件概率尽可能大。为方便求导，先取对数，把乘积变成求和：
+\[
+\ln\mathcal L(w,b)=\sum_{i=1}^{m}\big[y_i\ln p_i+(1-y_i)\ln(1-p_i)\big].
+\]
+再乘负号并取平均，极大化便转化为熟悉的极小化：
 \begin{equation}\label{eq:bce}
-\boxed{J(\beta)=-\frac1m\sum_{i=1}^{m}\left[y_i\log\pi_i+(1-y_i)\log(1-\pi_i)\right].}
+\boxed{J(w,b)=-\frac1m\sum_{i=1}^{m}
+\left[y_i\ln p_i+(1-y_i)\ln(1-p_i)\right].}
 \end{equation}
-这是二元交叉熵，也是该伯努利模型的平均负对数似然。由此可见，在给定概率假设和独立性条件下，损失函数具有明确的统计来源，而不是仅凭曲线形状选择\cite[第6章]{lihang2019}。
+它叫作\textbf{二元交叉熵}（Binary Cross-Entropy，BCE），也是当前伯努利概率模型的平均负对数似然。
 
-\subsection{从链式法则推导梯度}
+\subsection{交叉熵为什么合理？先看几个数}
 
-先考虑一个样本，记
+单个样本的交叉熵是
 \[
-\ell=-y\log\pi-(1-y)\log(1-\pi),\quad\pi=\sigma(z),\quad z=x\trans\beta.
+\ell=-y\ln p-(1-y)\ln(1-p).
 \]
-对概率变量求导：
+\begin{center}
+\begin{tabular}{ccc}\toprule
+真实类别 $y$&预测正类概率 $p$&单样本损失 $\ell$\\\midrule
+1&0.9&0.105\\
+1&0.1&2.303\\
+0&0.1&0.105\\
+0&0.9&2.303\\\bottomrule
+\end{tabular}
+\end{center}
+如果真实类别是 $1$，预测概率 $0.9$ 比 $0.1$ 好得多；相反，如果真实类别是 $0$，预测 $p=0.9$ 就意味着模型非常自信地预测错了，因此损失很大。这也是交叉熵相比只看“分类对不对”包含更多信息的原因。
+
+\subsection{从求导得到梯度更新公式}
+
+前一课已经学过梯度下降，现在我们只需对 $J$ 求偏导。第一步，先推导 Sigmoid 的导数：
+\begin{align}
+\sigma'(z)
+&=\frac{e^{-z}}{(1+e^{-z})^2}\\
+&=\boxed{\sigma(z)\big[1-\sigma(z)\big].}\label{eq:sigmoid-derivative}
+\end{align}
+第二步，对单样本交叉熵 $\ell=-y\ln p-(1-y)\ln(1-p)$ 关于 $p$ 求导：
 \[
-\frac{\partial\ell}{\partial\pi}=-\frac y\pi+\frac{1-y}{1-\pi}
-=\frac{\pi-y}{\pi(1-\pi)}.
+\frac{\partial\ell}{\partial p}=-\frac yp+\frac{1-y}{1-p}.
 \]
-再利用式 \eqref{eq:sigmoid-derivative}，
-\[
+因为 $p=\sigma(z)$，链式法则给出
+\begin{align*}
 \frac{\partial\ell}{\partial z}
-=\frac{\partial\ell}{\partial\pi}\frac{\mathrm d\pi}{\mathrm dz}
-=\frac{\pi-y}{\pi(1-\pi)}\pi(1-\pi)=\pi-y.
-\]
-由于 $\nabla_\beta z=x$，因此
-\begin{equation}\label{eq:logistic-single-gradient}
-\boxed{\nabla_\beta\ell=(\pi-y)x.}
-\end{equation}
-把所有样本堆叠为设计矩阵 $X\in\R^{m\times p}$，定义概率向量 $\boldsymbol\pi=(\pi_1,\ldots,\pi_m)\trans$，得到平均损失梯度
+&=\frac{\partial\ell}{\partial p}\frac{\mathrm dp}{\mathrm dz}\\
+&=\left(-\frac yp+\frac{1-y}{1-p}\right)p(1-p)\\
+&=-y(1-p)+(1-y)p\\
+&=\boxed{p-y}.
+\end{align*}
+这一步最值得记住：\textbf{对线性得分 $z$ 求导，得到预测概率减去真实标签。}
+
+第三步，由 $z=wx+b$ 可知 $\partial z/\partial w=x$、$\partial z/\partial b=1$。所以对所有样本取平均：
 \begin{equation}\label{eq:logistic-full-gradient}
-\boxed{\nabla J(\beta)=\frac1mX\trans(\boldsymbol\pi-y).}
+\boxed{\begin{aligned}
+\frac{\partial J}{\partial w}&=\frac1m\sum_{i=1}^{m}(p_i-y_i)x_i,\\
+\frac{\partial J}{\partial b}&=\frac1m\sum_{i=1}^{m}(p_i-y_i).
+\end{aligned}}
 \end{equation}
-这里的结构与最小二乘梯度 \eqref{eq:ls-gradient} 十分接近：都是先计算某种“预测与真实值之差”，再乘设计矩阵的转置。差别在于预测值和损失函数来自不同的概率或建模假设。
-
-\subsection{Hessian、凸性与例外情形}
-
-记 $W=\operatorname{diag}\{\pi_i(1-\pi_i)\}_{i=1}^m$，则
-\begin{equation}\label{eq:logistic-hessian}
-\nabla^2J(\beta)=\frac1mX\trans W X.
+对应的梯度下降更新为
+\begin{equation}\label{eq:logistic-update}
+\begin{aligned}
+w_{\mathrm{新}}&=w_{\mathrm{旧}}-\eta\frac1m\sum_{i=1}^{m}(p_i-y_i)x_i,\\
+b_{\mathrm{新}}&=b_{\mathrm{旧}}-\eta\frac1m\sum_{i=1}^{m}(p_i-y_i).
+\end{aligned}
 \end{equation}
-对任意 $v$，
+与线性回归很像：先算预测与真实值的差，再求平均并更新参数。只是逻辑回归用的是概率 $p_i$，线性回归用的是线性预测值 $\hat y_i$。
+
+\subsection{手算一次逻辑回归训练}
+
+为了计算简单，只用一个样本：$x=2,y=1$，并取
 \[
-v\trans\nabla^2J(\beta)v=\frac1m(Xv)\trans W(Xv)\ge0,
+w_0=0,\quad b_0=0,\quad\eta=0.1.
 \]
-所以在常规无正则化二分类逻辑回归中，平均负对数似然关于 $\beta$ 是凸函数。对所有有限参数，$\pi_i\in(0,1)$，故 $W$ 的对角元素严格为正；若 $X$ 满列秩，则 Hessian 正定。
-
-但是正定 Hessian 并不自动保证有限的极小点存在。例如样本线性完全可分时，沿某些参数方向把系数绝对值持续放大，可以使负对数似然逼近下确界 $0$，而无正则化极大似然估计可能不存在有限解。因而“凸”与“存在唯一有限最优解”是不同的判断。
-
-\subsection{一次相容的手工更新}
-
-设单个样本 $x=1$、$y=1$，初始 $w_0=b_0=0$，模型为 $\pi=\sigma(wx+b)$。此时 $z=0$、$\pi=1/2$，因此
+第一步，预测概率：
 \[
-\frac{\partial\ell}{\partial w}=(1/2-1)\cdot 1=-1/2,\qquad
-\frac{\partial\ell}{\partial b}=-1/2.
+p_0=\sigma(0\times2+0)=0.5.
 \]
-取学习率 $\eta=0.1$，同步更新后
-\begin{equation}
-(w_1,b_1)=(0.05,0.05).
-\end{equation}
-这个例子特意从给定参数重新计算概率，避免出现“人为指定的概率值”与 Sigmoid 模型不一致的问题。概率预测若需要转为类别，还须另外声明分类阈值及相应的决策代价。
+第二步，计算两个偏导：
+\[
+\frac{\partial J}{\partial w}=(0.5-1)\times2=-1,\qquad
+\frac{\partial J}{\partial b}=0.5-1=-0.5.
+\]
+第三步，更新：
+\[
+w_1=0-0.1(-1)=0.1,\qquad b_1=0-0.1(-0.5)=0.05.
+\]
+第四步，再预测：
+\[
+p_1=\sigma(0.1\times2+0.05)=\sigma(0.25)\approx0.5622.
+\]
+因为真实标签是 $1$，正类概率从 $50\%$ 上升到约 $56.22\%$，这一步朝正确方向变化。单样本交叉熵也由约 $0.6931$ 降到约 $0.5759$。\textbf{这只验证了当前样本的当前更新，并非任意学习率都保证下降。}
 
-\subsection{模型解释与适用范围}
+\subsection{选读：凸性、可分性与边界条件}
 
-在其他特征固定时，某个系数 $\beta_j$ 增加一单位特征对应的对数几率变化为 $\beta_j$；对应的几率乘以 $\mathrm e^{\beta_j}$。这一解释针对模型规定的条件几率，并不能仅凭相关性就作因果推断。样本不平衡、特征高度相关、概率校准等问题留待后续专题讨论。
+对于标准的线性逻辑回归，未正则化的平均负对数似然关于模型参数是凸函数；这不意味着 Sigmoid 曲线本身全局凸。凸性也不保证任意学习率都收敛，更不保证在每种数据集上都存在唯一的有限最优参数。例如数据线性完全可分时，未加正则化的参数极大似然估计可能没有有限解。这些是进一步学习优化理论时需要考虑的边界，本课只需知道它们存在。
+
+\subsection{这一课应当掌握什么}
+
+\begin{enumerate}
+\item 知道二分类标签 $y\in\{0,1\}$ 与连续数值预测不同。
+\item 会根据 $z=wx+b$ 和 Sigmoid 计算预测概率。
+\item 知道交叉熵可以从伯努利似然推导，不是随意挑选的函数。
+\item 会由 $\sigma'(z)=\sigma(z)[1-\sigma(z)]$ 推得 $\partial\ell/\partial z=p-y$。
+\item 能够像上一课一样手算一次对 $w,b$ 的同步更新。
+\end{enumerate}
+\noindent\textbf{自检：}若真实标签为 $1$，预测概率由 $0.1$ 改成 $0.9$，交叉熵如何变化？为什么逻辑回归的线性部分不能直接解释成概率？
+
+本课内容对应周志华《机器学习》的对数几率回归与 ISLP 分类章节\cite{zhou2016,james2023}。
