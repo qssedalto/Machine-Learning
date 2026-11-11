@@ -1,119 +1,36 @@
-\section{线性回归与最小二乘估计}\label{ch:least-squares}
+\section{线性回归与最小二乘法}\label{ch:least-squares}
 
-\subsection{模型和目标函数}
+\subsection{核心思路}
 
-对单个数值特征，采用含截距的线性预测函数
-\begin{equation}\label{eq:simple-lm}
-\hat y_i=wx_i+b.
-\end{equation}
-记残差 $e_i=y_i-\hat y_i$，残差平方和（RSS）为
-\begin{equation}
-\operatorname{RSS}(w,b)=\sum_{i=1}^{m}(y_i-wx_i-b)^2.
-\end{equation}
-最小二乘法选择使 RSS 最小的参数。推导时常用等价目标
+对于一元线性回归，预测式为 $\hat y_i=wx_i+b$。最小二乘法选择让误差平方和最小的 $w,b$：
 \begin{equation}\label{eq:linear-objective}
-J(w,b)=\frac1{2m}\sum_{i=1}^{m}(wx_i+b-y_i)^2.
+\boxed{J(w,b)=\frac1{2m}\sum_{i=1}^{m}(wx_i+b-y_i)^2.}
 \end{equation}
-其中系数 $1/(2m)$ 不改变最优解：$1/m$ 对应平均损失，$1/2$ 用于简化求导。另一方面，如果讨论指标 MSE，则必须仍然采用 $1/m$，不能将目标函数 $J$ 和 MSE 视作完全相同的数值量\cite[第3章]{james2023}。
+系数 $1/2$ 方便求导，不影响最优参数；实际报告的 MSE 则不包含这个 $1/2$。
 
-\subsection{一元最小二乘的显式解}
+\subsection{怎样直接求出直线}
 
-令 $\bar x=m^{-1}\sum_i x_i$、$\bar y=m^{-1}\sum_i y_i$。分别求偏导，
-\begin{align}
-\frac{\partial J}{\partial b}&=\frac1m\sum_{i=1}^{m}(wx_i+b-y_i),\label{eq:partial-b}\\
-\frac{\partial J}{\partial w}&=\frac1m\sum_{i=1}^{m}x_i(wx_i+b-y_i).\label{eq:partial-w}
-\end{align}
-令 \eqref{eq:partial-b} 为零，得到
-\begin{equation}\label{eq:intercept-ls}
-b=\bar y-w\bar x.
-\end{equation}
-再将其代入 \eqref{eq:partial-w}，可得
-\[
-\sum_{i=1}^{m}x_i\bigl[w(x_i-\bar x)-(y_i-\bar y)\bigr]=0.
-\]
-利用 $\sum_i(x_i-\bar x)=0$ 与 $\sum_i(y_i-\bar y)=0$，整理成
-\[
-w\sum_{i=1}^{m}(x_i-\bar x)^2
-=\sum_{i=1}^{m}(x_i-\bar x)(y_i-\bar y).
-\]
-只要自变量并非全都相同，即 $\sum_i(x_i-\bar x)^2>0$，便得到
+记 $\bar x$ 为所有 $x_i$ 的平均值，$\bar y$ 为所有 $y_i$ 的平均值。对 $w,b$ 求偏导并令其为零，得到
 \begin{equation}\label{eq:slope-ls}
-\boxed{\hat w=\frac{\sum_{i=1}^{m}(x_i-\bar x)(y_i-\bar y)}{\sum_{i=1}^{m}(x_i-\bar x)^2},\qquad
+\boxed{\hat w=
+\frac{\sum_{i=1}^{m}(x_i-\bar x)(y_i-\bar y)}
+     {\sum_{i=1}^{m}(x_i-\bar x)^2},
+\qquad
 \hat b=\bar y-\hat w\bar x.}
 \end{equation}
-因此，含截距的最小二乘拟合直线经过点 $(\bar x,\bar y)$。这是一条由正规方程得到的代数结论，并不要求真实条件期望严格线性。
 
-从统计学角度看，斜率还可写成样本协方差与样本方差之比：
+\textbf{使用条件：}至少有两个不同的 $x_i$，否则分母为零，无法唯一确定斜率。这个公式说明拟合直线一定经过 $(\bar x,\bar y)$\cite[第3章]{james2023}。
+
+\subsection{一个小例子}
+
+给定 $(1,2),(2,3),(3,5)$，有 $\bar x=2,\ \bar y=10/3$。代入公式得到
 \[
-\hat w=\frac{\widehat{\operatorname{Cov}}(X,Y)}{\widehat{\operatorname{Var}}(X)},
+\hat w=\frac32,\qquad \hat b=\frac13,
 \]
-前提是协方差和方差采用相同的归一化分母，并且样本方差非零。
+所以拟合直线是 $\hat y=\frac32x+\frac13$。对应的 MSE 为 $1/18$。
 
-\subsection{矩阵形式与正规方程}
+\subsection{需要注意什么}
 
-对含 $p$ 个待估参数的线性模型，设设计矩阵 $X\in\R^{m\times p}$、参数 $\beta\in\R^p$、目标向量 $y\in\R^m$。若需要截距，可将全 1 列作为 $X$ 的一列。目标函数为
-\begin{equation}\label{eq:matrix-ls}
-J(\beta)=\frac1{2m}\norm{X\beta-y}_2^2.
-\end{equation}
-展开为
-\[
-J(\beta)=\frac1{2m}\bigl(\beta\trans X\trans X\beta-2y\trans X\beta+y\trans y\bigr).
-\]
-对 $\beta$ 求梯度与 Hessian，
-\begin{equation}\label{eq:ls-gradient}
-\nabla J(\beta)=\frac1mX\trans(X\beta-y),\qquad
-\nabla^2J(\beta)=\frac1mX\trans X.
-\end{equation}
-因此驻点满足正规方程
-\begin{equation}\label{eq:normal-equation}
-X\trans X\hat\beta=X\trans y.
-\end{equation}
-若 $X$ 满列秩，$X\trans X$ 正定且可逆，从而
-\begin{equation}\label{eq:ols-solution}
-\boxed{\hat\beta=(X\trans X)^{-1}X\trans y.}
-\end{equation}
+最小二乘法求的是\textbf{训练数据上的最佳拟合直线}，不保证因果关系，也不保证对新数据预测得好。它不要求误差一定服从正态分布；正态假设主要用于进一步进行统计推断或似然解释。
 
-\begin{proposition}[最小二乘目标的凸性与解的唯一性]\label{prop:ols-convex}
-对任意实矩阵 $X$，式 \eqref{eq:matrix-ls} 定义的目标函数是凸函数；若 $X$ 满列秩，则它严格凸，且最小二乘解唯一。
-\end{proposition}
-\begin{proof}
-对任意 $v\in\R^p$，
-\[
-v\trans\nabla^2J(\beta)v=\frac1m v\trans X\trans Xv=\frac1m\norm{Xv}_2^2\ge0.
-\]
-所以 Hessian 半正定，目标函数凸。当 $X$ 满列秩时，$v\ne0$ 蕴含 $Xv\ne0$，从而上式严格大于零，Hessian 正定，目标函数严格凸。此时驻点存在且唯一，故 \eqref{eq:ols-solution} 是唯一全局最小点。
-\end{proof}
-
-\begin{remark}
-若 $X$ 不满列秩，$X\trans X$ 不可逆，不能机械套用式 \eqref{eq:ols-solution}。最小二乘解仍存在，但参数可能不唯一。此时可使用 Moore--Penrose 伪逆获得最小范数解：$\hat\beta=X^+y$。实际数值计算中，QR 分解或奇异值分解通常比显式计算 $(X\trans X)^{-1}$ 更稳健。
-\end{remark}
-
-\subsection{残差的正交性与几何解释}
-
-由正规方程 \eqref{eq:normal-equation} 可知
-\begin{equation}
-X\trans(y-X\hat\beta)=0.
-\end{equation}
-换言之，残差向量 $r=y-X\hat\beta$ 与 $X$ 的每一列正交。拟合值 $\hat y=X\hat\beta$ 是观测向量 $y$ 在 $X$ 列空间上的正交投影。即便参数不唯一，投影 $\hat y$ 仍然唯一。
-
-若设计矩阵包含一列全 1 向量，则残差之和为零：
-\[
-\sum_{i=1}^{m}(y_i-\hat y_i)=0.
-\]
-这一性质来自最小二乘的一阶最优性，而不是一般预测算法都满足的规律。
-
-\subsection{与正态噪声极大似然的联系}
-
-进一步假设
-\begin{equation}
-Y_i=x_i\trans\beta+\varepsilon_i,\qquad \varepsilon_i\overset{\mathrm{i.i.d.}}\sim N(0,\sigma^2),
-\end{equation}
-其中这里 $x_i$ 表示设计矩阵第 $i$ 行对应的列向量，$\sigma^2>0$。对固定的 $\sigma^2$，负对数似然（略去与 $\beta$ 无关的常数）为
-\[
--\ell(\beta)=\frac1{2\sigma^2}\sum_{i=1}^{m}(y_i-x_i\trans\beta)^2+\text{const}.
-\]
-因此在上述正态、独立且同方差的噪声模型下，$\beta$ 的极大似然估计与最小二乘估计一致。\textbf{然而，求最小二乘解本身并不需要假设误差正态。}正态性是将其解释为上述似然模型估计方法时加入的条件。
-
-\subsection{小结与边界}
-
-最小二乘法回答的是给定线性函数族后，怎样选取使残差平方和最小的参数。它不自动保证回归系数具有因果解释，不保证线性模型正确，也不保证测试误差足够小。后续还需分别研究建模假设、统计推断、数值稳定性与泛化能力。
+多个特征也可以做线性回归，但会用到矩阵计算。入门阶段先掌握上述一元公式即可。

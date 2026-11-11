@@ -1,140 +1,34 @@
-\section{一阶优化方法：梯度下降与步长}\label{ch:gradient}
+\section{梯度下降法}\label{ch:gradient}
 
-\subsection{迭代法的出发点}
+\subsection{为什么需要它}
 
-最小二乘问题在适当的秩条件下可以写出显式解，但许多优化目标没有便于直接计算的闭式解。对可微函数 $J:\R^p\to\R$，考虑
-\[
-\min_{\theta\in\R^p}J(\theta).
-\]
-迭代方法从初值 $\theta_0$ 出发，构造 $\theta_1,\theta_2,\ldots$，希望目标函数逐步下降，最终得到近似最优解。需要区分两个概念：\emph{下降方向}决定局部朝哪里移动，\emph{步长}决定一次移动多远。即便方向正确，过大的步长仍可能使函数值上升。
+最小二乘法有时能直接求解，但许多模型没有方便的计算公式。梯度下降采用\textbf{反复小步调整参数}的方法：沿着损失函数下降的方向移动，让误差逐渐减小\cite[第5章]{liu2020}。
 
-\subsection{方向导数与负梯度}
-
-若 $J$ 在 $\theta$ 处可微，沿单位方向 $d$ 的方向导数为
-\begin{equation}\label{eq:directional-deriv}
-D_dJ(\theta)=\nabla J(\theta)\trans d,\qquad \norm d_2=1.
-\end{equation}
-依据 Cauchy--Schwarz 不等式，
-\[
-\nabla J(\theta)\trans d\ge-\norm{\nabla J(\theta)}_2.
-\]
-当 $\nabla J(\theta)\ne0$ 时，取
-\begin{equation}\label{eq:steepest-descent-direction}
-d_*=-\frac{\nabla J(\theta)}{\norm{\nabla J(\theta)}_2}
-\end{equation}
-达到上述下界。因此负梯度是\emph{欧氏范数下局部一阶变化率最小的单位方向}。这里的“最速”是局部概念，不意味着一步更新就达到全局最优点，也不保证任意步长均能下降\cite[第5章]{liu2020}。
-
-梯度下降法把方向与步长结合起来，得到
+对只有一个参数 $w$ 的损失函数 $J(w)$，更新公式为
 \begin{equation}\label{eq:gd-update}
-\boxed{\theta_{k+1}=\theta_k-\eta_k\nabla J(\theta_k),\qquad \eta_k>0.}
+\boxed{w_{\text{新}}=w_{\text{旧}}-\eta J'(w_{\text{旧}}).}
 \end{equation}
-对于含斜率和截距的模型，应先在 $(w_k,b_k)$ 处计算梯度，再同步更新这两个参数。
+这里 $\eta>0$ 称为\textbf{学习率}。导数决定移动方向，学习率决定移动幅度。
 
-如果在一次迭代中先更新 $w$，再用新的 $w$ 更新 $b$，得到的便是另一种顺序更新方法。
+\subsection{在线性回归中怎样使用}
 
-\subsection{线性回归中的梯度}
-
-对含截距的简单线性回归，
-\[
-J(w,b)=\frac1{2m}\sum_{i=1}^{m}(wx_i+b-y_i)^2.
-\]
-由链式法则，
+对上一节的目标函数 $J(w,b)$，分别求导：
 \begin{equation}\label{eq:gd-lm-partials}
-\frac{\partial J}{\partial w}=\frac1m\sum_{i=1}^{m}(wx_i+b-y_i)x_i,\quad
+\frac{\partial J}{\partial w}=\frac1m\sum_{i=1}^{m}(wx_i+b-y_i)x_i,\qquad
 \frac{\partial J}{\partial b}=\frac1m\sum_{i=1}^{m}(wx_i+b-y_i).
 \end{equation}
-对应的同步更新为
-\begin{align}
-w_{k+1}&=w_k-\frac{\eta_k}{m}\sum_i(w_kx_i+b_k-y_i)x_i,\\
-b_{k+1}&=b_k-\frac{\eta_k}{m}\sum_i(w_kx_i+b_k-y_i).
-\end{align}
+然后同时按“原参数减去学习率乘导数”更新 $w$ 和 $b$。
 
-取 $D=\{(1,2),(2,4)\}$，以 $(w_0,b_0)=(0,0)$ 为初值，可算得 $\partial_wJ=-5$、$\partial_bJ=-3$。取 $\eta_0=0.1$，一步后参数为
-\begin{equation}\label{eq:gd-first-step}
-(w_1,b_1)=(0.5,0.3).
-\end{equation}
-这只是一次迭代的结果，而非最优解。将其代入损失函数，可以检查此次更新是否确实实现了下降。
+例如，取样本 $(1,2),(2,4)$，初值 $w=b=0$、学习率 $\eta=0.1$。此时两个偏导数分别是 $-5$ 和 $-3$，更新一次后得到 $w=0.5,\ b=0.3$。这只是第一步，还要继续迭代。
 
-\subsection{学习率与一个可完整分析的例子}
+\subsection{学习率不能随意选}
 
-考虑一元二次目标
-\begin{equation}\label{eq:scalar-quadratic}
-J(w)=(w-2)^2.
-\end{equation}
-其唯一最小点为 $w_*=2$。因 $J'(w)=2(w-2)$，梯度下降满足
-\[
-w_{k+1}-2=(1-2\eta)(w_k-2).
-\]
-若学习率 $\eta$ 固定，则递推得到
-\begin{equation}\label{eq:gd-error-recursion}
-w_k-2=(1-2\eta)^k(w_0-2).
-\end{equation}
-对任意初值的收敛充要条件为 $\abs{1-2\eta}<1$，也就是
-\begin{equation}\label{eq:scalar-gd-range}
-\boxed{0<\eta<1.}
-\end{equation}
-$\eta=1/2$ 时，除初值已为最优点外，迭代一步即可到达 $w_*$；$\eta=1$ 时通常发生两点振荡；$\eta>1$ 时，除最优初值外，误差绝对值增大。这些判断只对当前目标成立，不能直接拿来作为一般优化问题的步长条件。
+以 $J(w)=(w-2)^2$ 为例，最小值出现在 $w=2$。使用固定学习率时：
+\begin{itemize}
+\item $\eta=0.5$：一次就能到达最小点；
+\item $0<\eta<1$：从任意初值出发都能收敛；
+\item $\eta=1$：一般会来回振荡；$\eta>1$：一般会越走越远。
+\end{itemize}
+\textbf{注意：这些范围只适用于本例，不是所有模型通用的规则。}
 
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}
-\begin{axis}[width=.74\textwidth,height=6.1cm,xlabel={$w$},ylabel={$J(w)$},xmin=-.2,xmax=4.2,ymin=0,ymax=6.4,grid=major,grid style={draw=gray!16},axis line style={draw=black!55},tick align=outside]
-\addplot[very thick,color=accent,domain=-.2:4.2,samples=120]{(x-2)^2};
-\addplot[only marks,mark=*,mark size=2.2pt,color=black] coordinates {(2,0)};
-\node[anchor=south west,font=\small] at (axis cs:2.05,.2) {$w_*=2$};
-\end{axis}
-\end{tikzpicture}
-\caption{二次目标 $J(w)=(w-2)^2$。曲线的极小点可以解析确定；梯度下降能否接近该点取决于步长。}\label{fig:quadratic-objective}
-\end{figure}
-
-\subsection{一般光滑目标的下降估计}
-
-为了从简单例子走向一般结论，加入一个常见条件。
-
-\begin{assumption}[$L$-光滑]\label{ass:smooth}
-函数 $J$ 连续可微，且存在常数 $L>0$，使任意 $u,v\in\R^p$ 满足
-\begin{equation}
-\norm{\nabla J(u)-\nabla J(v)}_2\le L\norm{u-v}_2.
-\end{equation}
-\end{assumption}
-
-\begin{proposition}[下降引理]\label{prop:descent-lemma}
-在假设 \ref{ass:smooth} 下，任意 $u,v$ 满足
-\begin{equation}\label{eq:descent-lemma}
-J(v)\le J(u)+\nabla J(u)\trans(v-u)+\frac L2\norm{v-u}_2^2.
-\end{equation}
-\end{proposition}
-\begin{proof}
-令 $d=v-u$，定义 $g(t)=J(u+td)$。由微积分基本定理，
-\[
-J(v)-J(u)=\int_0^1\nabla J(u+td)\trans d\,\mathrm dt.
-\]
-减去 $\nabla J(u)\trans d$，并利用 Cauchy--Schwarz 不等式及梯度的 Lipschitz 条件，
-\begin{align*}
-&J(v)-J(u)-\nabla J(u)\trans d\\
-&=\int_0^1[\nabla J(u+td)-\nabla J(u)]\trans d\,\mathrm dt\\
-&\le\int_0^1 Lt\norm d_2^2\,\mathrm dt
-=\frac L2\norm d_2^2.
-\end{align*}
-即得结论。
-\end{proof}
-
-在式 \eqref{eq:descent-lemma} 中令 $v=u-\eta\nabla J(u)$，得到
-\begin{equation}\label{eq:gd-descent-estimate}
-J(u-\eta\nabla J(u))\le J(u)-\eta\left(1-\frac{L\eta}{2}\right)\norm{\nabla J(u)}_2^2.
-\end{equation}
-因而当 $0<\eta<2/L$ 时，若梯度非零，右侧严格小于 $J(u)$。特别是 $\eta\le1/L$ 时有便于使用的下降下界。\textbf{函数值下降并不单独保证迭代点收敛到全局最优点}；要得出更强结论，还需要目标函数的下界、凸性或其他条件。
-
-\subsection{凸性、驻点与全局最优}
-
-若 $J$ 是可微凸函数，则其一阶条件为
-\[
-J(v)\ge J(u)+\nabla J(u)\trans(v-u).
-\]
-因此 $\nabla J(u_*)=0$ 蕴含 $J(v)\ge J(u_*)$ 对任意 $v$ 成立，即 $u_*$ 是全局最小点。反之，对于定义在整个 $\R^p$ 上的可微函数，任意局部极小点均满足梯度为零。两者合起来说明：\emph{对于无约束可微凸优化，驻点与全局最小点等价。}
-
-非凸情形不能照搬这一结论。例如 $J(w)=-w^2$ 在 $w=0$ 处梯度为零，但该点是局部最大点。实际算法分析必须说明所用结论属于哪一类目标函数。
-
-\subsection{后续扩展}
-
-当前主要使用固定步长讨论梯度下降。今后可以补充精确线搜索、回溯线搜索、强凸函数的线性收敛，以及牛顿法、拟牛顿法与随机梯度方法，并比较每步代价和精度要求。
+梯度下降也不是万能的：如果损失函数不是凸函数，导数等于零的点未必是全局最小点。实际训练通常需要结合损失变化、验证集表现来判断是否继续迭代。
