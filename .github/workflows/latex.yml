@@ -51,6 +51,10 @@ jobs:
       - name: 运行基础数值实验
         run: |
           python -m compileall -q code
+          python code/grid_search_intro.py
+          python code/ordinary_least_squares_intro.py
+          python code/gradient_descent_intro.py
+          python code/logistic_regression_intro.py
           python code/linear_regression_demo.py
           python code/logistic_gradient_check.py
           python code/polynomial_comparison.py
