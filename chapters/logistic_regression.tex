@@ -142,8 +142,8 @@ P(y_i\mid x_i)=p_i^{y_i}(1-p_i)^{1-y_i}.
 对应的梯度下降更新为
 \begin{equation}\label{eq:logistic-update}
 \begin{aligned}
-w_{\mathrm{新}}&=w_{\mathrm{旧}}-\eta\frac1m\sum_{i=1}^{m}(p_i-y_i)x_i,\\
-b_{\mathrm{新}}&=b_{\mathrm{旧}}-\eta\frac1m\sum_{i=1}^{m}(p_i-y_i).
+w_{\text{新}}&=w_{\text{旧}}-\eta\frac1m\sum_{i=1}^{m}(p_i-y_i)x_i,\\
+b_{\text{新}}&=b_{\text{旧}}-\eta\frac1m\sum_{i=1}^{m}(p_i-y_i).
 \end{aligned}
 \end{equation}
 与线性回归很像：先算预测与真实值的差，再求平均并更新参数。只是逻辑回归用的是概率 $p_i$，线性回归用的是线性预测值 $\hat y_i$。
