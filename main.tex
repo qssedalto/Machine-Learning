@@ -12,7 +12,7 @@
 \thispagestyle{plain}
 
 \begin{abstract}
-本笔记按照循序渐进的五课组织：机器学习基本概念、线性回归与最小二乘、梯度下降、逻辑回归、模型评估与泛化。先用简短的数据和手工计算解释每个新概念，再给出一般公式及必要的适用条件，并配合可运行的 Python 代码验证。复杂矩阵表达式与优化理论作为选读内容，不代替入门所需的理解过程。
+本文系统介绍机器学习的基本概念、线性回归与最小二乘估计、梯度下降法、逻辑回归以及模型评估与泛化。首先通过典型数据说明建模对象和损失函数，再从具体计算推导参数估计与迭代更新公式，进而讨论训练误差与测试误差的区别、交叉验证及常用评价指标。各部分在给出数学表达式时说明相关符号与适用条件，并结合数值算例展示计算过程。
 \end{abstract}
 \noindent\textbf{关键词：}机器学习；均方误差；线性回归；梯度下降；逻辑回归；泛化能力
 
@@ -21,14 +21,11 @@
 \tableofcontents
 \clearpage
 
-\input{chapters/preface}
 \input{chapters/foundations}
 \input{chapters/least_squares}
 \input{chapters/gradient_methods}
 \input{chapters/logistic_regression}
 \input{chapters/generalization}
-\input{chapters/experiments}
-\input{chapters/open_questions}
 
 \appendix
 \input{appendices/notation}
