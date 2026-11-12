@@ -7,7 +7,7 @@
 另一种方法是先收集已经知道结果的样本，让程序从这些样本中建立预测规则。机器学习研究的正是如何利用已有数据，得到能对新数据进行预测或分析的模型。这里的关键不是“让计算机记住答案”，而是希望它学到能够用于未见数据的规律。
 
 \begin{table}[htbp]\centering
-\caption{为了说明概念而构造的西瓜样本（不是实际数据）}
+\caption{为了说明概念而构造的西瓜样本}
 \begin{tabular}{llll}\toprule
 色泽&根蒂&敲声&已知结果\\\midrule
 青绿&蜷缩&浊响&好瓜\\
@@ -35,7 +35,6 @@ $i$ 表示第几个样本，而非指数。如果每个样本包含 $d$ 个数�
 \[
 \boldsymbol{x}_i=(x_{i1},x_{i2},\ldots,x_{id})^{\mathsf T}\in\mathbb R^d.
 \]
-西瓜颜色等类别型特征不能直接当作任意实数，需要适当编码。
 
 \subsection{学习任务的基本分类}
 
@@ -57,7 +56,7 @@ $i$ 表示第几个样本，而非指数。如果每个样本包含 $d$ 个数�
 \begin{equation}\label{eq:model-no-intercept}
 \boxed{\hat y=wx.}
 \end{equation}
-$\hat y$（读作“$y$ 帽”）表示预测值；$x$ 是输入；$w$ 是\textbf{模型参数}，决定这条直线的斜率。若 $w=5$，则学习两小时预测 $10$ 分；若 $w=10$，则预测 $20$ 分。改变 $w$，模型的预测规则就变了。
+$\hat y$表示预测值；$x$ 是输入；$w$ 是\textbf{模型参数}，决定这条直线的斜率。若 $w=5$，则学习两小时预测 $10$ 分；若 $w=10$，则预测 $20$ 分。改变 $w$，模型的预测规则就变了。
 
 现在允许直线有截距：
 \[
@@ -67,13 +66,13 @@ $\hat y$（读作“$y$ 帽”）表示预测值；$x$ 是输入；$w$ 是\textb
 \begin{equation}\label{eq:linear-family}
 \mathcal F=\{f_{w,b}(x)=wx+b\mid w,b\in\mathbb R\}.
 \end{equation}
-这里的竖线 $\mid$ 读作“满足右边条件的”；$w,b\in\mathbb R$ 表示两个参数可以取实数。\textbf{模型族}告诉我们允许使用什么形式的函数；\textbf{参数}决定最终是哪一条直线；\textbf{算法}负责从数据中寻找合适参数。
+\textbf{模型族}告诉我们允许使用什么形式的函数；\textbf{参数}决定最终是哪一条直线；\textbf{算法}负责从数据中寻找合适参数。
 
 李航《统计学习方法》常用“模型—策略—算法”概括这件事：\emph{模型}规定学什么，\emph{策略}规定什么算好，\emph{算法}规定怎么求出来\cite[第1章]{lihang2019}。
 
 \subsection{预测误差与损失函数}
 
-为了便于心算，再用三组人工数据：
+用三组数据：
 \[
 (x_1,y_1)=(1,2),\quad(x_2,y_2)=(2,4),\quad(x_3,y_3)=(3,6).
 \]
@@ -103,9 +102,9 @@ J(w)&=\frac13\big[(w-2)^2+(2w-4)^2+(3w-6)^2\big]\\
 \begin{equation}\label{eq:first-solution}
 \boxed{w^*=2,\qquad J(w^*)=0,\qquad \hat y=2x.}
 \end{equation}
-这已经是一个完整的训练过程：\textbf{提供数据 $\rightarrow$ 选择模型 $\rightarrow$ 定义损失 $\rightarrow$ 确定参数}。本题靠完全平方便可求解，不需要使用梯度下降。
+这是一个完整的训练过程：\textbf{提供数据 $\rightarrow$ 选择模型 $\rightarrow$ 定义损失 $\rightarrow$ 确定参数}。
 
-如果用优化语言，刚才求解的是
+如果优化，刚才求解的是
 \[
 \min_{w\in\mathbb R}J(w).
 \]
@@ -117,7 +116,7 @@ $\min J$ 指的是\emph{最小函数值}；$\argmin J$ 指的是\emph{让函数�
 \begin{equation}\label{eq:empirical-risk}
 \widehat R_D(f)=\frac1m\sum_{i=1}^{m}L(y_i,f(x_i)).
 \end{equation}
-这条看似复杂的公式，其实只是在说“对每个样本计算损失，再求平均”。在平方损失和 $f_w(x)=wx$ 的情况下，它恰好就是前面算过的 MSE。选择使平均损失最小的模型叫作\textbf{经验风险最小化}（ERM）：
+在平方损失和 $f_w(x)=wx$ 的情况下，它恰好就是前面算过的 MSE。选择使平均损失最小的模型叫作\textbf{经验风险最小化}（ERM）：
 \begin{equation}\label{eq:erm}
 \hat f\in\argmin_{f\in\mathcal F}\widehat R_D(f).
 \end{equation}
