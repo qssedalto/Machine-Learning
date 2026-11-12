@@ -1,12 +1,12 @@
-\section{第四课：逻辑回归与二分类}\label{ch:logistic}
+\section{逻辑回归与二分类}\label{ch:logistic}
 
 \subsection{从回归预测到分类概率}
 
-第二课用 $\hat y=wx+b$ 预测数值。如果现在改成预测学生能否通过考试，真实标记只有两种：
+线性回归利用 $\hat y=wx+b$ 预测连续数值。若将任务改为预测学生是否通过考试，可使用二分类标签：
 \[
 y=\begin{cases}1,&\text{通过考试},\\0,&\text{未通过考试}.\end{cases}
 \]
-例如某个教学数据集如下：
+例如，考虑以下包含学习时间与是否通过考试的数据：
 \begin{center}
 \begin{tabular}{cc}\toprule
 学习时间 $x$（小时）&是否通过 $y$\\\midrule
@@ -23,12 +23,7 @@ y=\begin{cases}1,&\text{通过考试},\\0,&\text{未通过考试}.\end{cases}
 \begin{equation}\label{eq:sigmoid}
 \boxed{\sigma(z)=\frac{1}{1+e^{-z}},\qquad z\in\mathbb R.}
 \end{equation}
-$e$ 是自然对数的底数。我们不需要一开始就背下曲线，只需代几个数：
-\[
-\sigma(0)=0.5,\quad
-\sigma(2)\approx0.8808,\quad
-\sigma(-2)\approx0.1192.
-\]
+其中 $e$ 为自然对数的底数。
 $z$ 越大，输出越接近 $1$；$z$ 越小，越接近 $0$；任何有限 $z$ 的输出都严格在两者之间。
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}
@@ -68,7 +63,7 @@ p=\frac{e^{wx+b}}{1+e^{wx+b}},\qquad
 
 \subsection{伯努利模型与参数估计}
 
-对于第 $i$ 个样本，真实标签 $y_i$ 只能是 $0$ 或 $1$，预测正类概率为 $p_i=\sigma(wx_i+b)$。那么
+设第 $i$ 个样本的标签 $y_i\in\{0,1\}$，模型给出的正类概率为 $p_i=\sigma(wx_i+b)$。因此
 \[
 P(Y_i=1\mid x_i)=p_i,\qquad P(Y_i=0\mid x_i)=1-p_i.
 \]
@@ -76,7 +71,7 @@ P(Y_i=1\mid x_i)=p_i,\qquad P(Y_i=0\mid x_i)=1-p_i.
 \begin{equation}\label{eq:bernoulli}
 P(y_i\mid x_i)=p_i^{y_i}(1-p_i)^{1-y_i}.
 \end{equation}
-看一下公式为什么成立：若 $y_i=1$，右边为 $p_i$；若 $y_i=0$，右边为 $1-p_i$。
+当 $y_i=1$ 时，右边为 $p_i$；当 $y_i=0$ 时，右边为 $1-p_i$。
 
 在给定特征后各样本类别条件独立的假设下，整批已观测标签的条件似然是
 \begin{equation}\label{eq:logit-likelihood}
@@ -112,7 +107,7 @@ P(y_i\mid x_i)=p_i^{y_i}(1-p_i)^{1-y_i}.
 
 \subsection{交叉熵的梯度推导}
 
-前一课已经学过梯度下降，现在我们只需对 $J$ 求偏导。第一步，先推导 Sigmoid 的导数：
+利用梯度下降法估计参数，需要计算目标函数 $J$ 对 $w$ 和 $b$ 的偏导数。首先求 Sigmoid 函数的导数：
 \begin{align}
 \sigma'(z)
 &=\frac{e^{-z}}{(1+e^{-z})^2}\\
@@ -148,9 +143,9 @@ b_{\text{新}}&=b_{\text{旧}}-\eta\frac1m\sum_{i=1}^{m}(p_i-y_i).
 \end{equation}
 与线性回归很像：先算预测与真实值的差，再求平均并更新参数。只是逻辑回归用的是概率 $p_i$，线性回归用的是线性预测值 $\hat y_i$。
 
-\subsection{单次梯度更新算例}
+\subsection{单次梯度更新}
 
-为了计算简单，只用一个样本：$x=2,y=1$，并取
+设一个样本 $x=2,y=1$，初始参数与学习率为
 \[
 w_0=0,\quad b_0=0,\quad\eta=0.1.
 \]
@@ -171,21 +166,8 @@ w_1=0-0.1(-1)=0.1,\qquad b_1=0-0.1(-0.5)=0.05.
 \[
 p_1=\sigma(0.1\times2+0.05)=\sigma(0.25)\approx0.5622.
 \]
-因为真实标签是 $1$，正类概率从 $50\%$ 上升到约 $56.22\%$，这一步朝正确方向变化。单样本交叉熵也由约 $0.6931$ 降到约 $0.5759$。\textbf{这只验证了当前样本的当前更新，并非任意学习率都保证下降。}
+由于该样本标签为 $1$，模型预测的正类概率从 $50\%$ 上升到约 $56.22\%$，这一步朝正确方向变化。单样本交叉熵也由约 $0.6931$ 降到约 $0.5759$。\textbf{这只验证了当前样本的当前更新，并非任意学习率都保证下降。}
 
-\subsection{凸性与可分性（选读）}
+\subsection{凸性与可分性}
 
 对于标准的线性逻辑回归，未正则化的平均负对数似然关于模型参数是凸函数；这不意味着 Sigmoid 曲线本身全局凸。凸性也不保证任意学习率都收敛，更不保证在每种数据集上都存在唯一的有限最优参数。例如数据线性完全可分时，未加正则化的参数极大似然估计可能没有有限解。这些是进一步学习优化理论时需要考虑的边界，本课只需知道它们存在。
-
-\subsection{本课要点}
-
-\begin{enumerate}
-\item 知道二分类标签 $y\in\{0,1\}$ 与连续数值预测不同。
-\item 会根据 $z=wx+b$ 和 Sigmoid 计算预测概率。
-\item 知道交叉熵可以从伯努利似然推导，不是随意挑选的函数。
-\item 会由 $\sigma'(z)=\sigma(z)[1-\sigma(z)]$ 推得 $\partial\ell/\partial z=p-y$。
-\item 能够像上一课一样手算一次对 $w,b$ 的同步更新。
-\end{enumerate}
-\noindent\textbf{自检：}若真实标签为 $1$，预测概率由 $0.1$ 改成 $0.9$，交叉熵如何变化？为什么逻辑回归的线性部分不能直接解释成概率？
-
-本课内容对应周志华《机器学习》的对数几率回归与 ISLP 分类章节\cite{zhou2016,james2023}。
