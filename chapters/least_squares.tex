@@ -2,7 +2,7 @@
 
 \subsection{线性回归的建模背景}
 
-上一课的三组数据恰好满足 $y=2x$，训练误差可以达到零。现实数据往往并不这样整齐。考虑四组数据：
+以上的三组数据恰好满足 $y=2x$，训练误差可以达到零。现实数据往往并不这样整齐。考虑四组数据：
 \begin{center}
 \begin{tabular}{ccc}\toprule
 学生&学习时间 $x$（小时）&成绩 $y$（教学数值）\\\midrule
@@ -37,7 +37,7 @@ $x_i$&$y_i$&$\hat y_i$&$e_i$\\\midrule
 4&4&5&$-1$\\\bottomrule
 \end{tabular}
 \end{center}
-残差相加得到 $0+0+1-1=0$，但模型显然没有预测对全部样本。为了避免正负抵消，使用残差平方和（Residual Sum of Squares，简称 RSS）衡量整体拟合误差：
+残差相加得到 $0+0+1-1=0$，但模型显然没有预测对全部样本。为了避免正负抵消，使用残差平方和（RSS）衡量整体拟合误差：
 \begin{equation}\label{eq:linear-rss}
 \operatorname{RSS}(w,b)=\sum_{i=1}^{n}(y_i-wx_i-b)^2.
 \end{equation}
@@ -59,7 +59,7 @@ $x_i$&$y_i$&$\hat y_i$&$e_i$\\\midrule
 \[
 \min_{w,b\in\mathbb R}J(w,b).
 \]
-这就是一个二元函数的极小化问题。接下来只用学过的偏导数来求参数。
+这就是一个二元函数的极小化问题。
 
 \subsection{最小二乘估计：截距}
 
@@ -89,7 +89,7 @@ w\bar x+b-\bar y&=0.
 \begin{equation}\label{eq:intercept-ls}
 \boxed{b=\bar y-w\bar x.}
 \end{equation}
-它告诉我们：\textbf{带截距项的普通最小二乘直线经过均值点 $(\bar x,\bar y)$}。这一性质是求导推出来的，不需要死记。
+得到：\textbf{带截距项的普通最小二乘直线经过均值点 $(\bar x,\bar y)$}。
 
 \subsection{最小二乘估计：斜率}
 
@@ -144,9 +144,9 @@ $-0.5$&$-0.5$&0.25&0.25\\
 \[
 \boxed{\operatorname{MSE}=\frac{0.09+0.01+1.21+0.49}{4}=0.45.}
 \]
-和刚才随手选的 $w=1,b=1$ 时的 $0.5$ 相比，训练误差确实降低了。
+和刚才的 $w=1,b=1$ 时的 $0.5$ 相比，训练误差确实降低了。
 
-若代入新输入 $x=5$，预测 $\hat y=0.8\times5+1.5=5.5$。它是\emph{模型给出的数学预测}，不是现实成绩；而且 $5$ 超出了训练输入的范围 $[1,4]$，这种预测属于\textbf{外推}，需要格外谨慎。
+若代入新输入 $x=5$，预测 $\hat y=0.8\times5+1.5=5.5$。它是\emph{模型给出的数学预测}，不是真实成绩；而且 $5$ 超出了训练输入的范围 $[1,4]$，这种预测属于\textbf{外推}，需要格外谨慎。
 
 \subsection{最优解的存在与唯一性}
 
