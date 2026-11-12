@@ -1,4 +1,4 @@
-\section{第一课：机器学习基础}\label{ch:foundations}
+\section{机器学习基础}\label{ch:foundations}
 
 \subsection{机器学习的基本思想}
 
@@ -35,7 +35,7 @@ $i$ 表示第几个样本，而非指数。如果每个样本包含 $d$ 个数�
 \[
 \boldsymbol{x}_i=(x_{i1},x_{i2},\ldots,x_{id})^{\mathsf T}\in\mathbb R^d.
 \]
-\textbf{先理解单个 $x$，再理解向量 $\boldsymbol{x}$。}西瓜颜色等类别型特征不能直接当作任意实数，需要适当编码，本课暂不展开。
+西瓜颜色等类别型特征不能直接当作任意实数，需要适当编码。
 
 \subsection{学习任务的基本分类}
 
@@ -121,7 +121,6 @@ $\min J$ 指的是\emph{最小函数值}；$\argmin J$ 指的是\emph{让函数�
 \begin{equation}\label{eq:erm}
 \hat f\in\argmin_{f\in\mathcal F}\widehat R_D(f).
 \end{equation}
-\textbf{阅读顺序：}先看得懂的数值算例，再把具体的 $w$、MSE 换成一般的 $f$、$L$，就容易理解这两个记号。这里并没有强制规定必须使用哪一种求解算法。
 
 \subsection{训练误差与泛化能力}
 
@@ -142,16 +141,3 @@ f(4)=8,\qquad g(4)=8+3\times2\times1=14.
 R(f)=\mathbb E_{(X,Y)\sim P_{X,Y}}[L(Y,f(X))].
 \end{equation}
 当前不要求直接计算这条式子。$\mathbb E$ 表示按目标数据分布求期望；它与把固定训练集上若干损失直接求平均不同。真实数据分布通常未知，因此我们会用独立测试数据估计预测表现。
-
-\subsection{本课要点}
-
-\begin{enumerate}
-\item 样本是记录，特征用于预测，标记是已有的目标答案。
-\item 监督学习有目标标记；无监督学习通常要从无目标标记的数据中发现结构。
-\item 模型规定预测形式，参数决定具体预测，损失函数评判好坏，算法寻找参数。
-\item 对单变量模型 $\hat y=wx$，能够手算 MSE 并通过完全平方找出最优 $w$。
-\item 训练误差小不保证对新数据预测得好。
-\end{enumerate}
-\noindent\textbf{自检：}真实值 $y=5$、预测值 $\hat y=3$，平方损失是多少？为什么把所有误差直接相加可能误导我们？
-
-本课概念主要对应周志华《机器学习》第1章、李航《统计学习方法》第1章，以及 ISLP 第2章\cite{zhou2016,lihang2019,james2023}。
