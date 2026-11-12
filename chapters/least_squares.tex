@@ -1,8 +1,8 @@
-\section{第二课：线性回归与最小二乘法}\label{ch:least-squares}
+\section{线性回归与最小二乘法}\label{ch:least-squares}
 
 \subsection{线性回归的建模背景}
 
-上一课的三组数据恰好满足 $y=2x$，训练误差可以达到零。现实数据往往并不这样整齐。考虑四组为了手算方便而构造的记录：
+上一课的三组数据恰好满足 $y=2x$，训练误差可以达到零。现实数据往往并不这样整齐。考虑四组数据：
 \begin{center}
 \begin{tabular}{ccc}\toprule
 学生&学习时间 $x$（小时）&成绩 $y$（教学数值）\\\midrule
@@ -37,7 +37,7 @@ $x_i$&$y_i$&$\hat y_i$&$e_i$\\\midrule
 4&4&5&$-1$\\\bottomrule
 \end{tabular}
 \end{center}
-残差相加得到 $0+0+1-1=0$，但模型显然没有预测对全部样本。为了避免正负抵消，将残差平方再求和：
+残差相加得到 $0+0+1-1=0$，但模型显然没有预测对全部样本。为了避免正负抵消，使用残差平方和（Residual Sum of Squares，简称 RSS）衡量整体拟合误差：
 \begin{equation}\label{eq:linear-rss}
 \operatorname{RSS}(w,b)=\sum_{i=1}^{n}(y_i-wx_i-b)^2.
 \end{equation}
@@ -63,7 +63,13 @@ $x_i$&$y_i$&$\hat y_i$&$e_i$\\\midrule
 
 \subsection{最小二乘估计：截距}
 
-求 $\partial J/\partial b$ 时，把 $w$ 和样本数据都看成常数。利用链式法则：
+符号 $\partial J/\partial b$ 表示在其他变量保持不变时，目标函数 $J$ 对参数 $b$ 的偏导数。求导时，将 $w$、$x_i$ 和 $y_i$ 视为常数。对每个平方项使用链式法则：
+\[
+\frac{\partial}{\partial b}(wx_i+b-y_i)^2
+=2(wx_i+b-y_i)\frac{\partial(wx_i+b-y_i)}{\partial b}
+=2(wx_i+b-y_i).
+\]
+将各项相加，再乘以目标函数中的 $1/(2n)$，得到
 \begin{equation}\label{eq:partial-b}
 \frac{\partial J}{\partial b}
 =\frac1n\sum_{i=1}^{n}(wx_i+b-y_i).
@@ -109,10 +115,6 @@ w\sum_{i=1}^{n}(x_i-\bar x)^2
 \hat b=\bar y-\hat w\bar x.
 }
 \end{equation}
-\textbf{读公式的方法：}分子衡量 $x$ 与 $y$ 围绕均值一起变动的程度；分母衡量 $x$ 自身的变动程度。统计学中也能写作 $\hat w=S_{xy}/S_{xx}$；若样本协方差、方差采用相同的分母约定，则 $\hat w=\widehat{\operatorname{Cov}}(X,Y)/\widehat{\operatorname{Var}}(X)$。
-
-\subsection{最小二乘估计：手工算例}
-
 回到开头的样本，先求均值：
 \[
 \bar x=\frac{1+2+3+4}{4}=2.5,\qquad
@@ -150,9 +152,9 @@ $-0.5$&$-0.5$&0.25&0.25\\
 
 对于一般二元函数，偏导数为零只是驻点条件，并不自动意味着极小值。这里不同：$J(w,b)$ 是若干平方项之和，是关于参数的\textbf{凸二次函数}。若输入不全相同，含截距的两个参数可以唯一确定，因此上面的解是全局最小点。若所有 $x_i$ 相同，斜率无法被唯一识别。
 
-\subsection{多元线性回归的矩阵形式（选读）}
+\subsection{多元线性回归的矩阵形式}
 
-以上是初学者最应该掌握的内容。若每个样本有很多特征，可将设计矩阵写成 $X\in\mathbb R^{n\times p}$，参数向量写成 $\boldsymbol\beta\in\mathbb R^p$，输出写成 $\boldsymbol y\in\mathbb R^n$。为了处理截距，可在 $X$ 中增加一列全 $1$。
+若每个样本有很多特征，可将设计矩阵写成 $X\in\mathbb R^{n\times p}$，参数向量写成 $\boldsymbol\beta\in\mathbb R^p$，输出写成 $\boldsymbol y\in\mathbb R^n$。为了处理截距，可在 $X$ 中增加一列全 $1$。
 
 平方损失的矩阵形式为
 \[
@@ -170,17 +172,3 @@ X^{\mathsf T}X\hat{\boldsymbol\beta}=X^{\mathsf T}\boldsymbol y.
 \begin{equation}\label{eq:ols-solution}
 \hat{\boldsymbol\beta}=(X^{\mathsf T}X)^{-1}X^{\mathsf T}\boldsymbol y.
 \end{equation}
-\textbf{不要把矩阵公式当作这一课必须背诵的起点。}先熟悉上面四组数据的两次偏导和手算，再学习矩阵形式会更自然。实际数值计算一般使用稳定的最小二乘求解接口，而不是直接显式求逆。最小二乘本身不要求误差必须服从正态分布；把它进一步解释为高斯模型的极大似然估计时，才会附加相关概率假设。
-
-\subsection{本课要点}
-
-\begin{enumerate}
-\item 能区分输入 $x_i$、真实值 $y_i$、预测值 $\hat y_i$ 与参数 $w,b$。
-\item 会从残差写出 RSS 和 MSE，知道 $J=\operatorname{MSE}/2$ 的用途。
-\item 会用偏导数一步一步推得 $\hat b=\bar y-\hat w\bar x$ 和斜率公式。
-\item 能按表格手算 $\bar x,\bar y,\hat w,\hat b$，并计算训练 MSE。
-\item 知道最小训练误差不等于对未来数据预测一定准确。
-\end{enumerate}
-\noindent\textbf{自检：}为什么四个残差相加等于零，却不能说明模型预测完全正确？为什么求导时分母可以选 $2n$？
-
-本课对应周志华《机器学习》线性回归部分、ISLP 简单线性回归部分，以及基础最小二乘优化内容\cite{zhou2016,james2023,liu2020}。

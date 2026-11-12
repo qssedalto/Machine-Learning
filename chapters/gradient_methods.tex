@@ -1,10 +1,8 @@
-\section{第三课：梯度下降法}\label{ch:gradient}
+\section{梯度下降法}\label{ch:gradient}
 
 \subsection{梯度下降的基本思想}
 
-上一课用最小二乘公式直接求出了斜率和截距，但并不是每个机器学习模型都存在方便使用的解析解。遇到复杂的目标函数，可以先任选一个参数初值，计算当前位置的导数，向使目标函数减小的方向迈一小步，再重复这个过程。这就是\textbf{梯度下降法}（Gradient Descent）的基本思想。
-
-这一课先不研究 Lipschitz 连续性、收敛速度等复杂条件，只用一元函数求导、二元函数偏导和简单算例理解算法为什么能工作。
+对于简单线性回归，可以使用最小二乘公式直接求出斜率和截距，但并不是每个机器学习模型都存在方便使用的解析解。遇到复杂的目标函数，可以先任选一个参数初值，计算当前位置的导数，向使目标函数减小的方向迈一小步，再重复这个过程。这就是\textbf{梯度下降法}（Gradient Descent）的基本思想。
 
 \subsection{一元函数的下降方向}
 
@@ -12,7 +10,7 @@
 \begin{equation}\label{eq:scalar-quadratic}
 f(x)=(x-3)^2.
 \end{equation}
-显然 $x=3$ 时取得最小值 $0$。假装我们还不知道答案，只知道求导：
+由平方的非负性可知，$x=3$ 时取得最小值 $0$。为分析函数值随 $x$ 的变化，求其一阶导数：
 \[
 f'(x)=2(x-3).
 \]
@@ -24,9 +22,9 @@ f'(x)=2(x-3).
 \begin{equation}\label{eq:scalar-update}
 \boxed{x_{\text{新}}=x_{\text{旧}}-\eta f'(x_{\text{旧}}),\qquad \eta>0.}
 \end{equation}
-$\eta$ 读作 eta，是\textbf{学习率}。例如在 $x=1$ 时导数为 $-4$：减去一个负数会让 $x$ 增大，正好朝 $3$ 的方向移动；如果当前位置换成 $x=4$，导数变为 $2$，减去正数就会让 $x$ 减小。两种更新都朝同一个最低点靠近，但一次移动多少还要由学习率决定。学习率控制一次更新移动多远，不能随便设得很大。为什么公式是减号？因为正导数需要往左走，负导数需要往右走，减去导数恰好同时满足这两点。
+$\eta$ 是\textbf{学习率}。例如在 $x=1$ 时导数为 $-4$：减去一个负数会让 $x$ 增大，正好朝 $3$ 的方向移动；如果当前位置换成 $x=4$，导数变为 $2$，减去正数就会让 $x$ 减小。两种更新都朝同一个最低点靠近，但一次移动多少还要由学习率决定。学习率控制一次更新移动多远，不能随便设得很大。为什么公式是减号？因为正导数需要往左走，负导数需要往右走，减去导数恰好同时满足这两点。
 
-\subsection{迭代计算示例}
+\subsection{迭代计算}
 
 取初值 $x_0=1$，学习率 $\eta=0.2$。第一次先算导数：
 \[
@@ -65,14 +63,13 @@ x_1=x_0-\eta f'(x_0)=1-0.2(-4)=\boxed{1.8}.
 \[
 \frac{\partial J}{\partial w},\qquad \frac{\partial J}{\partial b}.
 \]
-把这两个数放进一个列向量，就是\textbf{梯度}：
+将两个偏导数按参数 $(w,b)$ 的顺序排列，得到目标函数关于参数向量的\textbf{梯度}。其中 $\partial J/\partial w$ 表示固定 $b$ 时 $J$ 随 $w$ 的变化率，$\partial J/\partial b$ 表示固定 $w$ 时 $J$ 随 $b$ 的变化率，两者均在同一个参数点 $(w,b)$ 处计算：
 \begin{equation}\label{eq:gradient-two}
 \boxed{\nabla J(w,b)=
 \begin{pmatrix}
 \partial J/\partial w\\[2pt]\partial J/\partial b
 \end{pmatrix}.}
 \end{equation}
-记号 $\nabla$ 读作 nabla（倒三角）。梯度并不是多了神秘的新计算：它只是把各个参数的偏导数组合起来。
 
 因此，同时更新两个参数的规则是
 \begin{equation}\label{eq:gd-update}
@@ -85,7 +82,7 @@ b_{\text{新}}&=b_{\text{旧}}-\eta\frac{\partial J}{\partial b}.
 
 \subsection{线性回归的偏导数}
 
-回顾第二课使用的函数
+对含截距的线性回归，取目标函数
 \[
 J(w,b)=\frac1{2m}\sum_{i=1}^{m}(wx_i+b-y_i)^2.
 \]
@@ -96,11 +93,11 @@ J(w,b)=\frac1{2m}\sum_{i=1}^{m}(wx_i+b-y_i)^2.
 \frac{\partial J}{\partial b}&=\frac1m\sum_{i=1}^{m}(wx_i+b-y_i).
 \end{aligned}}
 \end{equation}
-读这两个式子时，先看括号中的 $wx_i+b-y_i$：它就是预测值减真实值。对 $w$ 求偏导时，还要乘 $x_i$；对 $b$ 求偏导时不需要乘。然后对所有样本取平均。
+两式中的 $wx_i+b-y_i$ 均为第 $i$ 个样本的预测值减真实值。由于 $\partial(wx_i+b-y_i)/\partial w=x_i$，对 $w$ 求偏导时每一项还需乘以 $x_i$；由于 $\partial(wx_i+b-y_i)/\partial b=1$，对 $b$ 求偏导时不需要这一因子。最后对各样本的结果求平均。
 
-\subsection{双参数梯度下降算例}
+\subsection{双参数梯度下降}
 
-这一次只用两组数据：
+设训练数据为：
 \[
 (x_1,y_1)=(0,1),\qquad (x_2,y_2)=(1,3).
 \]
@@ -108,7 +105,7 @@ J(w,b)=\frac1{2m}\sum_{i=1}^{m}(wx_i+b-y_i)^2.
 \begin{equation}\label{eq:gd-two-points}
 J(w,b)=\frac14[(b-1)^2+(w+b-3)^2].
 \end{equation}
-为什么是这两个平方项？$x=0$ 时预测 $b$，残差为 $b-1$；$x=1$ 时预测 $w+b$，残差为 $w+b-3$。样本数 $m=2$，所以 $2m=4$。
+将两组数据分别代入模型：当 $x=0$ 时，预测值为 $b$，预测误差为 $b-1$；当 $x=1$ 时，预测值为 $w+b$，预测误差为 $w+b-3$。平方后求和，再除以 $2m=4$，即可得到上式。
 
 直接求导：
 \[
@@ -145,7 +142,7 @@ x_{k+1}-3=(1-2\eta)(x_k-3).
 \]
 所以固定学习率时，要让误差对任意初值逐渐趋于零，需要 $|1-2\eta|<1$，即 $0<\eta<1$。\textbf{这只是对 $f(x)=(x-3)^2$ 的结论，不是所有函数的通用学习率范围。}
 
-\subsection{梯度下降的向量形式（选读）}
+\subsection{梯度下降的向量形式}
 
 当参数很多时，把它们记成向量 $\boldsymbol\theta$，就可以将所有偏导同时更新写作
 \[
@@ -153,16 +150,3 @@ x_{k+1}-3=(1-2\eta)(x_k-3).
 =\boldsymbol\theta_k-\eta_k\nabla J(\boldsymbol\theta_k).}
 \]
 如果 $J$ 是凸可微函数，一个梯度为零的点是全局极小点；但一般非凸函数并没有这样的保证。关于高维步长、曲率、收敛速度的更严格结论属于进阶优化理论，本课不把它们当作入门要求。
-
-\subsection{本课要点}
-
-\begin{enumerate}
-\item 会判断一元函数导数的正负对应怎样的更新方向。
-\item 能根据 $x_{\text{新}}=x_{\text{旧}}-\eta f'(x_{\text{旧}})$ 手算一次迭代。
-\item 知道梯度是偏导数组成的向量，并能同时更新 $w,b$。
-\item 理解“先预测、再计算误差、再求偏导、最后更新参数”的流程。
-\item 知道学习率影响迭代过程，不能只看导数符号。
-\end{enumerate}
-\noindent\textbf{自检：}$f(x)=(x-4)^2$，初值 $x_0=2$，学习率 $\eta=0.1$。第一次更新得到多少？
-
-本课的迭代思想与基础最优化教材中的梯度法一致\cite{liu2020}。
