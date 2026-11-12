@@ -1,8 +1,8 @@
-\section{第五课：过拟合、泛化与模型评价}\label{ch:generalization}
+\section{过拟合、泛化与模型评价}\label{ch:generalization}
 
 \subsection{泛化问题的直观例子}
 
-先看一个最容易理解的例子。三名学生的教学数据是：
+考虑三组学习时间与成绩的数据：
 \begin{center}
 \begin{tabular}{ccc}\toprule
 学生&每天学习时间&成绩\\\midrule
@@ -24,7 +24,7 @@ A&1 小时&60\\ B&2 小时&70\\ C&3 小时&80\\\bottomrule
 新样本平方损失&0&900\\\bottomrule
 \end{tabular}
 \end{center}
-所以，\textbf{训练误差一样小，不代表新数据上的效果一样好。}这个例子完全是人工构造的，不表示真实成绩一定遵循线性规律。
+所以，\textbf{训练误差一样小，不代表新数据上的效果一样好。}
 
 \subsection{过拟合与欠拟合}
 
@@ -52,7 +52,7 @@ A&1 小时&60\\ B&2 小时&70\\ C&3 小时&80\\\bottomrule
 \[
 \operatorname{MSE}_{\mathrm{test}}=\frac1n\sum_{i=1}^{n}(y_i'-\hat f(x_i'))^2.
 \]
-这里的撇号只是提示“它们来自另一批测试数据”。
+
 
 \textbf{泛化误差}关心模型对目标数据分布中的新观测的平均损失。假设训练得到的 $\hat f$ 已经确定，定义
 \begin{equation}\label{eq:generalization-risk}
@@ -60,14 +60,7 @@ R(\hat f)=\mathbb E_{(X,Y)\sim P}[L(Y,\hat f(X))].
 \end{equation}
 $\mathbb E$ 是期望，$P$ 是目标数据的联合分布。我们通常不知道这个分布，所以难以直接计算 $R(\hat f)$；独立测试集上的平均损失只是它的\textbf{统计估计}。
 
-\begin{center}
-\begin{tabularx}{\textwidth}{p{24mm}XX}\toprule
-名称&在哪些数据上计算？&能告诉我们什么？\\\midrule
-训练误差&训练时见过的样本&拟合这些样本的程度\\
-测试误差&训练与选择时未使用的样本&对新数据表现的有限样本估计\\
-泛化风险&目标数据的概率分布&理论上的平均预测损失\\\bottomrule
-\end{tabularx}
-\end{center}
+
 
 \subsection{训练集、验证集与测试集}
 
@@ -97,7 +90,7 @@ $E_k$ 表示第 $k$ 次验证的平均误差。若各折样本数 $n_k$ 不同�
 \begin{equation}\label{eq:kfold-weighted}
 E_{\mathrm{CV,weighted}}=\frac{\sum_k n_kE_k}{\sum_k n_k}.
 \end{equation}
-五折、十折都很常见，但交叉验证不是无条件“越多折越好”。时间序列、同一学生多次记录等具有依赖关系的数据，还需要符合数据结构的拆分方式。
+五折、十折都是常见的交叉验证方案；折数的选择需要结合样本量与估计精度。
 
 \subsection{数据泄漏}
 
@@ -109,7 +102,7 @@ z=\frac{x-\mu}{\sigma}.
 
 正确的基本步骤是：\emph{只在训练数据上学习预处理参数，再用这些参数转换验证集和测试集。}交叉验证时也必须在\emph{每一折的训练部分}重新拟合标准化器。数据泄漏可能让评价结果看起来比实际部署效果更好。
 
-\subsection{偏差—方差分解}
+\subsection{偏差与方差}
 
 为什么增加模型复杂度通常能降低训练误差，却不一定改善测试效果？一个常用的分析视角是\textbf{偏差—方差权衡}。
 
@@ -125,11 +118,11 @@ z=\frac{x-\mu}{\sigma}.
 =\operatorname{Bias}(\hat f_D(x))^2
 +\operatorname{Var}(\hat f_D(x))+\sigma^2.
 \end{equation}
-这里的期望要同时对重复抽取的训练数据与新的观测噪声考虑。\textbf{初学时只需理解三项各代表什么，不能把这条式子无条件套用到准确率、交叉熵等指标。}模型灵活性与偏差、方差的关系是常见趋势，而不是所有模型的单调定理\cite[第2章]{james2023}。
+这里的期望要同时对重复抽取的训练数据与新的观测噪声考虑。
 
 \subsection{回归模型评价指标}
 
-最常用的指标之一仍是 MSE：
+回归任务常用的评价指标是均方误差（MSE）：
 \[
 \operatorname{MSE}=\frac1n\sum_{i=1}^{n}(y_i-\hat y_i)^2.
 \]
@@ -151,19 +144,19 @@ z=\frac{x-\mu}{\sigma}.
 \item $FN$：实际为正，漏报为负（假反例）。
 \end{itemize}
 \begin{table}[htbp]\centering
-\caption{混淆矩阵的一个教学算例}\label{tab:confusion}
+\caption{二分类混淆矩阵}\label{tab:confusion}
 \begin{tabular}{lcc}\toprule
 &预测正类&预测负类\\\midrule
 实际正类&$TP=24$&$FN=16$\\
 实际负类&$FP=6$&$TN=54$\\\bottomrule
 \end{tabular}\end{table}
 
-\textbf{查准率（Precision）}回答“预测为正的样本中，有多少是真的正？”：
+\textbf{查准率（Precision）}是所有预测为正的样本中真实正类所占比例：
 \[
 \operatorname{Precision}=\frac{TP}{TP+FP}
 =\frac{24}{24+6}=80\%.
 \]
-\textbf{查全率（Recall）}回答“真正的正类中，有多少被找到了？”：
+\textbf{查全率（Recall）}是所有实际正类样本中被正确预测为正类的比例：
 \[
 \operatorname{Recall}=\frac{TP}{TP+FN}
 =\frac{24}{24+16}=60\%.
@@ -173,15 +166,15 @@ z=\frac{x-\mu}{\sigma}.
 \boxed{F_1=\frac{2PR}{P+R}
 =\frac{2\times0.8\times0.6}{0.8+0.6}\approx0.686.}
 \]
-在这条式子中，$P$ 和 $R$ 分别是 Precision 与 Recall，\emph{不是}概率分布符号。当分母为零时，需要另行规定指标处理规则。
+在 $F_1$ 的计算中，$P$ 表示查准率（Precision），$R$ 表示查全率（Recall）。调和平均可以综合衡量查准率与查全率：当其中一项明显较低时，$F_1$ 也会受到影响。上述指标的分母为零时须明确处理规则。
 
-ROC 曲线通过改变分类阈值，绘制真正例率 $TPR=TP/(TP+FN)$ 与假正例率 $FPR=FP/(FP+TN)$ 的关系；AUC 是曲线下面积，常用于衡量排序能力。它们比一个固定阈值的准确率提供不同的信息。
+分类阈值变化时，查准率与查全率可能随之改变。ROC 曲线以假正例率 $\mathrm{FPR}=FP/(FP+TN)$ 为横轴、真正例率 $\mathrm{TPR}=TP/(TP+FN)$ 为纵轴，展示不同分类阈值下的表现。ROC 曲线下面积称为 AUC，反映模型区分正负样本的排序能力；它与固定阈值下的准确率评价角度不同。
 
-\subsection{多项式回归实验}
+\subsection{多项式回归}
 
-考虑构造数据 $y=\sin x+\varepsilon$，其中 $\varepsilon$ 是均值为零的随机扰动。用不同次数的多项式拟合，教学记录中曾得到以下一组\textbf{固定数据划分下的示例结果}：
+考虑数据生成关系 $y=\sin x+\varepsilon$，其中 $\varepsilon$ 为均值为零的随机扰动。针对一组固定的数据划分，记录不同次数多项式拟合得到的训练与测试 MSE：
 \begin{table}[htbp]\centering
-\caption{不同模型复杂度下的一次教学实验记录}\label{tab:polynomial-compare}
+\caption{不同多项式次数对应的训练与测试误差}\label{tab:polynomial-compare}
 \begin{tabular}{rrrl}\toprule
 多项式次数&训练 MSE&测试 MSE&观察\\\midrule
 1&0.1869&0.1740&模型较简单，误差偏高\\
@@ -189,17 +182,3 @@ ROC 曲线通过改变分类阈值，绘制真正例率 $TPR=TP/(TP+FN)$ 与假�
 25&0.0269&0.2600&训练更好，测试明显变差\\\bottomrule
 \end{tabular}
 \end{table}
-这组数值仅说明这一教学设置下的现象，不是所有数据都满足的规律。正式实验需保存生成数据的随机种子、划分、预处理与运行环境，才能独立复现。比较多个候选模型时，应先通过验证集或交叉验证选择，最终测试集留作独立评估。
-
-\subsection{本课要点}
-
-\begin{enumerate}
-\item 训练误差小不保证泛化误差小；测试误差只是泛化风险的估计。
-\item 理解过拟合与欠拟合，并能用学生成绩例子解释区别。
-\item 分清训练集、验证集、测试集的角色和数据泄漏风险。
-\item 能口头复述五折交叉验证，并会计算平均验证误差。
-\item 能从混淆矩阵手算 Precision、Recall 与 $F_1$。
-\end{enumerate}
-\noindent\textbf{自检：}为什么“先对全体样本做标准化，再分训练集与测试集”可能导致不真实的高分？为什么训练误差从 $0.0368$ 降到 $0.0269$ 并不意味着模型变好？
-
-主要参考周志华《机器学习》第2章、李航《统计学习方法》模型评估部分及 ISLP 第2章\cite{zhou2016,lihang2019,james2023}。
