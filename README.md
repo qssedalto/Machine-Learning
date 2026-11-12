@@ -1,24 +1,24 @@
-# 机器学习 · 五课循序渐进学习笔记
+# 机器学习 · 公式推导与基础方法
 
-> **这个仓库放的是什么？** 一份依照前五课教学内容重构的中文机器学习学习笔记：从生活例子、手工计算走向通用数学公式，再使用 Python 验证。保留关键推导和必要的成立条件，不以复杂记号代替解释。  
+> **这个仓库放的是什么？** 一份中文机器学习学习笔记，涵盖基本概念、最小二乘法、梯度下降、逻辑回归及模型评价，保留核心数学推导与计算例子。  
 > **从哪里开始？** 要读成品看 [main.pdf](main.pdf)；要改正文进入 [chapters/](chapters/)；要改版式打开 [config/preamble.tex](config/preamble.tex)；要改摘要打开 [main.tex](main.tex)。
 
 ## 目录和正文的组织方式
 
-PDF 目录只列出一级章节（阅读指南、五课内容、数值实验、进阶专题和附录），避免把大量教学问题列进目录而影响检索。各课内部仍保留完整的分节、教学示例、手工推导和对应 Python 代码；小节标题改用客观的知识点名称。详尽的讲解放在正文，而不是堆在目录里。
+PDF 仅收录五个核心主题、数学符号附录及修订记录；目录只显示一级标题。阅读指南、代码清单与进阶主题的 LaTeX 源文件仍保存在仓库中，但不进入正式 PDF。Python 程序也继续保留在 `code/` 目录供独立使用。
 
-## 从哪里开始学？
+## 正文结构
 
-正文按教学顺序组织。推荐先看每章的**为什么、数字例子和计算步骤**，再看“选读”的矩阵表达式或进阶边界。
+正文从建模与损失函数逐步过渡至参数估计、数值优化、概率分类和模型评价。
 
 | 顺序 | 课程 | 先掌握什么 | 正文 |
 | --- | --- | --- | --- |
-| 1 | 数据到机器学习 | 样本、标记、模型、参数、平方损失、MSE | [第一课](chapters/foundations.tex) |
-| 2 | 线性回归与最小二乘 | 残差、两次偏导、斜率与截距的手算 | [第二课](chapters/least_squares.tex) |
-| 3 | 梯度下降 | 导数的正负、学习率、手算迭代 | [第三课](chapters/gradient_methods.tex) |
-| 4 | 逻辑回归 | Sigmoid、概率、伯努利似然、交叉熵 | [第四课](chapters/logistic_regression.tex) |
-| 5 | 模型评价 | 过拟合、测试集、交叉验证、混淆矩阵 | [第五课](chapters/generalization.tex) |
-| 实践 | 公式转 Python | 与手算核对、重复迭代、独立运行脚本 | [实验指南](chapters/experiments.tex) |
+| 1 | 机器学习基础 | 样本、特征、模型、参数、损失函数与经验风险 | [机器学习基础](chapters/foundations.tex) |
+| 2 | 线性回归与最小二乘 | RSS、MSE、偏导数、正规方程 | [线性回归](chapters/least_squares.tex) |
+| 3 | 梯度下降法 | 下降方向、学习率、迭代更新与梯度 | [梯度下降法](chapters/gradient_methods.tex) |
+| 4 | 逻辑回归 | Sigmoid、条件概率、伯努利似然、交叉熵 | [逻辑回归](chapters/logistic_regression.tex) |
+| 5 | 模型评价 | 过拟合、训练与测试误差、交叉验证、混淆矩阵 | [模型评价](chapters/generalization.tex) |
+
 
 **请注意：** 这份笔记中的学生成绩、西瓜分类等都是为了教学而构造的例子。曲线与训练结果是否能泛化，必须通过独立数据检验。
 
@@ -81,20 +81,20 @@ Machine-Learning/
 | [`config/preamble.tex`](config/preamble.tex) | 设置 A4 页边距、西文字体、宏包、章节标题颜色与间距、页眉页脚、定理环境、数学符号快捷命令、Python 代码框、图表及 GB/T 7714 文献样式。 | **正在使用**，由 `main.tex` 加载。中文字体交给 `ctexart` 的内置 Fandol 字体映射管理，避免在科技云重复覆盖字体。 |
 | [`config/titlepage.tex`](config/titlepage.tex) | 设计独立封面：主副标题、分隔线、版本和编译日期等。 | **目前未启用**：`main.tex` 使用 `\maketitle`，没有 `\input{config/titlepage}`。修改这个文件不会改变当前 PDF 的封面。 |
 
-## 03 / chapters：八个正文章节
+## 03 / chapters：五个正文主题与三个保留的源文件
 
-每个文件对应一个由浅入深的课程主题，章节内容通过 `main.tex` 中的 `\input{chapters/文件名}` 进入最终文档。
+`main.tex` 只引入五个主要章节。其余三个源文件保留作历史资料或后续独立参考，不参与当前 PDF 构建。
 
 | 文件 | 正文内容 | 主要关注点 |
 | --- | --- | --- |
-| [`chapters/preface.tex`](chapters/preface.tex) | 引言、研究范围、写作思路和教材来源。 | 区分模型拟合、参数求解与泛化能力。 |
+| [`chapters/preface.tex`](chapters/preface.tex) | 旧版阅读指南。 | 当前不编入 PDF。 |
 | [`chapters/foundations.tex`](chapters/foundations.tex) | 数据、模型族、损失函数、经验风险和学习任务的定义。 | 怎样从数据建模走向一个可求解的优化问题。 |
 | [`chapters/least_squares.tex`](chapters/least_squares.tex) | 线性回归、残差平方和、正规方程与相关条件。 | 最小二乘解从哪里来、何时存在或唯一。 |
 | [`chapters/gradient_methods.tex`](chapters/gradient_methods.tex) | 方向导数、负梯度、步长选择及一阶方法的性质。 | 为何下降、何时收敛、步长为什么重要。 |
 | [`chapters/logistic_regression.tex`](chapters/logistic_regression.tex) | Logistic 概率模型、伯努利似然、交叉熵及梯度。 | 分类损失如何由概率假设推导出来。 |
 | [`chapters/generalization.tex`](chapters/generalization.tex) | 训练与测试风险、过拟合、偏差—方差以及评价方法。 | 为什么训练误差低不保证新数据表现好。 |
-| [`chapters/experiments.tex`](chapters/experiments.tex) | 解析算例、数值结果的说明及源代码片段。 | **实验的书面解释**，并使用 `\lstinputlisting` 从 `code/` 读取 Python 代码。 |
-| [`chapters/open_questions.tex`](chapters/open_questions.tex) | 正则化、进一步的数值优化、统计推断等待扩展议题。 | 记录尚未展开的研究问题，而非把它们当作已证明结论。 |
+| [`chapters/experiments.tex`](chapters/experiments.tex) | 旧版 Python 实验展示。 | 当前不编入 PDF，程序本身仍可独立运行。 |
+| [`chapters/open_questions.tex`](chapters/open_questions.tex) | 旧版进阶主题。 | 当前不编入 PDF。 |
 
 ## 04 / code：七个可运行的 Python 实验
 
@@ -110,14 +110,14 @@ Machine-Learning/
 | [`code/logistic_gradient_check.py`](code/logistic_gradient_check.py) | 通过中心差分近似梯度，检查逻辑回归负对数似然的解析梯度。 | `logistic_regression.tex` |
 | [`code/polynomial_comparison.py`](code/polynomial_comparison.py) | 在固定随机种子的构造数据上比较不同次数多项式回归的误差。 | `generalization.tex`、`experiments.tex` |
 
-> **区分两种工作**：编辑 `code/*.py` 改变的是实验程序；编辑 `chapters/experiments.tex` 改变的是 PDF 中对实验的描述。若增删代码行，还需要检查 `\lstinputlisting` 的行号范围。
+> **区分两种工作**：`code/*.py` 是可执行程序，而 `chapters/experiments.tex` 是已经从当前 PDF 中移出的历史实验说明。程序仍由 GitHub Actions 单独检验。
 
 ## 05 / appendices：正文之外的辅助材料
 
 | 文件 | 它的作用 |
 | --- | --- |
 | [`appendices/notation.tex`](appendices/notation.tex) | 统一列出 `m`、`p`、`X`、`J(θ)`、经验风险等数学符号及其约定，减少跨章节歧义。 |
-| [`appendices/development_log.tex`](appendices/development_log.tex) | 记录文稿版本、修订时间与内容变更；目前含初始建立和 v0.3 教学重构记录。 |
+| [`appendices/development_log.tex`](appendices/development_log.tex) | 记录文稿版本、修订时间与内容变更；包含 v0.1 至 v0.5 的主要修订记录。 |
 
 ## 常见修改：该打开哪个文件？
 
