@@ -1,0 +1,185 @@
+\section{支持向量机与最大间隔分类}\label{ch:svm}
+
+\subsection{为什么分类正确还不够}
+
+第\ref{ch:logistic}节的逻辑回归通过概率与对数损失建立线性分类器；第\ref{ch:decision-tree}节用递归划分建立规则。现在研究另一种经典思路：如果许多直线都能把两类训练样本完全分开，应该选哪一条？
+
+\textbf{支持向量机}（Support Vector Machine，SVM）的最大间隔思想是：在所有能正确分开训练样本的超平面中，优先选择\emph{距最近训练样本最远}的那个超平面\cite[第6章]{zhou2016}\cite[第7章]{lihang2019}。本章讨论训练数据\textbf{线性可分}的硬间隔情形。软间隔、对偶问题与核函数可以在掌握本章几何意义后继续学习。
+
+\subsection{分类超平面与符号约定}
+
+给定 $d$ 维输入向量 $\boldsymbol x\in\mathbb R^d$，线性分类超平面写作
+\begin{equation}\label{eq:svm-hyperplane}
+\boxed{\boldsymbol w^{\mathsf T}\boldsymbol x+b=0,\qquad
+\boldsymbol w\ne\boldsymbol0.}
+\end{equation}
+$\boldsymbol w$ 是超平面的法向量，$b$ 是偏置；在二维空间这是一条直线，在三维空间对应一个平面。设样本标签 $y_i\in\{-1,+1\}$，分类器根据
+\[
+\hat y=\operatorname{sign}(\boldsymbol w^{\mathsf T}\boldsymbol x+b)
+\]
+作出预测。边界上得分恰好为零时需要另定平票规则。
+
+对于训练样本，正确分类要求：正类得分大于 $0$，负类得分小于 $0$。两个条件合并为
+\begin{equation}\label{eq:svm-correct}
+y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)>0.
+\end{equation}
+但式\eqref{eq:svm-correct}只保证分类方向正确，没有量化样本到边界有多远。
+
+\subsection{推导点到超平面的距离}
+
+设样本 $\boldsymbol x_i$ 到超平面的正交投影为 $\boldsymbol p_i$。因为 $\boldsymbol w$ 是法向量，投影点可以写成
+\[
+\boldsymbol p_i=\boldsymbol x_i-t\boldsymbol w.
+\]
+由于 $\boldsymbol p_i$ 位于式\eqref{eq:svm-hyperplane}的超平面上，
+\begin{align*}
+\boldsymbol w^{\mathsf T}(\boldsymbol x_i-t\boldsymbol w)+b&=0,\\
+\boldsymbol w^{\mathsf T}\boldsymbol x_i-t\|\boldsymbol w\|_2^2+b&=0,\\
+t&=\frac{\boldsymbol w^{\mathsf T}\boldsymbol x_i+b}
+{\|\boldsymbol w\|_2^2}.
+\end{align*}
+点到投影点的距离为
+\begin{align}
+d_i
+&=\|\boldsymbol x_i-\boldsymbol p_i\|_2\notag\\
+&=|t|\|\boldsymbol w\|_2\notag\\
+&=\boxed{\frac{|\boldsymbol w^{\mathsf T}\boldsymbol x_i+b|}
+{\|\boldsymbol w\|_2}.}\label{eq:svm-point-distance}
+\end{align}
+这样就把直观的“离直线多远”转换成了可计算的向量公式。
+
+\subsection{函数间隔与几何间隔有什么不同}
+
+定义第 $i$ 个样本的\textbf{函数间隔}为
+\begin{equation}\label{eq:svm-functional-margin}
+\hat\gamma_i=y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b),
+\end{equation}
+\textbf{带符号的几何间隔}为
+\begin{equation}\label{eq:svm-geometric-margin}
+\boxed{\gamma_i=\frac{y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)}
+{\|\boldsymbol w\|_2}.}
+\end{equation}
+当样本正确分类时，几何间隔是正数，等于点到超平面的距离。
+
+为什么几何间隔需要除以 $\|\boldsymbol w\|_2$？如果把模型参数同时放大两倍，
+\[
+(\boldsymbol w,b)\longmapsto(2\boldsymbol w,2b),
+\]
+超平面的位置完全不变，因为两个方程具有相同的零点集合。但是函数间隔会放大两倍；几何间隔则满足
+\[
+\frac{2y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)}
+{\|2\boldsymbol w\|_2}
+=\frac{y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)}
+{\|\boldsymbol w\|_2}.
+\]
+因此真正反映空间距离的是\textbf{几何间隔}，不是没有归一化的函数间隔。
+
+\subsection{从最大间隔到二次规划}
+
+整个训练集的单侧几何间隔定义为各训练样本几何间隔的最小值：
+\[
+\gamma=\min_{1\leq i\leq n}
+\frac{y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)}
+{\|\boldsymbol w\|_2}.
+\]
+SVM 试图最大化 $\gamma$。对线性可分的训练数据，我们可以借助参数缩放的不变性，规定\emph{最小函数间隔等于 $1$}。这相当于要求每个样本满足
+\[
+y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)\geq1.
+\]
+在这种规范化下，最小几何间隔为 $\gamma=1/\|\boldsymbol w\|_2$。因为欧氏范数总为正，最大化 $1/\|\boldsymbol w\|_2$ 等价于最小化 $\frac12\|\boldsymbol w\|_2^2$。于是得到\textbf{硬间隔 SVM 的原始优化问题}：
+\begin{equation}\label{eq:svm-primal}
+\boxed{\begin{aligned}
+\min_{\boldsymbol w,b}\quad&
+\frac12\|\boldsymbol w\|_2^2\\
+\text{s.t.}\quad&
+y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)\geq1,
+\quad i=1,\ldots,n.
+\end{aligned}}
+\end{equation}
+系数 $1/2$ 不改变最优点，只是为了使梯度写成
+\[
+\nabla_{\boldsymbol w}\left(\frac12\|\boldsymbol w\|_2^2\right)
+=\boldsymbol w.
+\]
+目标函数是凸二次函数，约束是线性不等式，所以式\eqref{eq:svm-primal}是一个\textbf{凸二次规划}问题\cite{liu2020}。线性可分保证存在可行解，凸性确保任一局部最小点也是全局最小点；这里的“全局最优”指训练优化目标，并不保证所有未见数据上的误差最小。
+
+\subsection{支持向量与两侧间隔宽度}
+
+对于规范化的最优解，恰好满足
+\begin{equation}\label{eq:svm-support}
+\boxed{y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)=1}
+\end{equation}
+的训练样本称为\textbf{支持向量}。它们位于两条间隔边界
+\[
+\boldsymbol w^{\mathsf T}\boldsymbol x+b=1,\qquad
+\boldsymbol w^{\mathsf T}\boldsymbol x+b=-1
+\]
+之上。需明确区分
+\begin{equation}\label{eq:svm-width}
+\boxed{\text{单侧几何间隔}=\frac1{\|\boldsymbol w\|_2},
+\qquad
+\text{两侧边界总宽度}=\frac2{\|\boldsymbol w\|_2}.}
+\end{equation}
+不同教材有时用“间隔”指单侧距离，有时指完整宽度；它们只相差常数 $2$，不会改变最大间隔超平面的选择\cite[第9章]{james2023}。
+
+\subsection{手工求解一个二维硬间隔问题}
+
+考虑六个二维教学样本，前三个为负类，后三个为正类：
+\begin{center}
+\begin{tabular}{crrc}\toprule
+样本&$x_1$&$x_2$&类别 $y$\\\midrule
+A&$-2$&0&$-1$\\
+B&$-3$&$-2$&$-1$\\
+C&$-4$&2&$-1$\\
+D&2&0&$+1$\\
+E&3&$-2$&$+1$\\
+F&4&2&$+1$\\\bottomrule
+\end{tabular}
+\end{center}
+两类样本分别位于 $x_1\leq-2$ 和 $x_1\geq2$ 的区域。最近的两点 A、D 间距为 $4$，其中垂直平分线为 $x_1=0$，它能正确分开全部样本。任何分类直线到 A、D 的最小距离都不可能超过二者距离的一半，因此 $x_1=0$ 就是最大间隔直线。
+
+将该直线规范化为支持向量函数间隔等于 $1$ 的形式，可取
+\[
+\boldsymbol w=(0.5,0)^{\mathsf T},\qquad b=0.
+\]
+对 A 与 D，
+\[
+y_A(\boldsymbol w^{\mathsf T}\boldsymbol x_A+b)
+=(-1)\times(-1)=1,
+\]
+\[
+y_D(\boldsymbol w^{\mathsf T}\boldsymbol x_D+b)
+=(+1)\times1=1.
+\]
+所以 A 与 D 是支持向量。其余点的函数间隔大于 $1$，不是这个例子的支持向量。再算单侧间隔与完整宽度：
+\[
+\gamma=\frac1{\sqrt{0.5^2+0^2}}=\boxed{2},
+\qquad 2\gamma=\boxed{4}.
+\]
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}
+\begin{axis}[width=.76\textwidth,height=6.4cm,
+ xmin=-5,xmax=5,ymin=-3,ymax=3,
+ xlabel={$x_1$},ylabel={$x_2$},axis lines=middle,
+ grid=major,grid style={draw=gray!15},xtick={-4,-2,0,2,4}]
+\addplot[only marks,mark=*,mark size=2.8pt,color=accent] coordinates {(-2,0) (-3,-2) (-4,2)};
+\addplot[only marks,mark=square*,mark size=2.8pt,color=red!65!black] coordinates {(2,0) (3,-2) (4,2)};
+\addplot[very thick,color=black] coordinates {(0,-3) (0,3)};
+\addplot[dashed,color=black!55] coordinates {(-2,-3) (-2,3)};
+\addplot[dashed,color=black!55] coordinates {(2,-3) (2,3)};
+\end{axis}
+\end{tikzpicture}
+\caption{教学样本的最大间隔分类边界 $x_1=0$ 与两侧间隔边界 $x_1=\pm2$。}
+\label{fig:svm-max-margin}
+\end{figure}
+
+\subsection{硬间隔的适用范围与知识联系}
+
+硬间隔 SVM 要求数据可以被某个超平面完全分开。如果样本受到噪声影响而不可线性分离，式\eqref{eq:svm-primal}就不存在可行解，通常应考虑允许间隔违反的\textbf{软间隔 SVM}。另外，线性 SVM 与逻辑回归虽然都可以产生线性分类边界，但前者围绕分类间隔建模，后者通过条件概率和对数损失估计参数；二者不应视作相同的优化问题。
+
+本章的二维算例能证明手工得到的边界符合最大间隔几何原则，但仅有六个教学样本，不能据此推断真实任务的泛化能力。数据分布、特征缩放、噪声、正则化和测试设计仍会影响实际预测效果。
+
+\subsection{本章小结}
+
+硬间隔 SVM 的推导链条是：\textbf{正确分类条件 $\rightarrow$ 点到超平面距离 $\rightarrow$ 几何间隔 $\rightarrow$ 函数间隔规范化 $\rightarrow$ 凸二次规划}。支持向量是恰好落在规范化间隔边界上的样本，它们直观地解释了哪些训练点对最大间隔分类边界具有关键作用。
