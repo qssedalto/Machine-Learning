@@ -1,0 +1,129 @@
+\section{决策树与特征划分}\label{ch:decision-tree}
+
+\subsection{从线性分类器到决策规则}
+
+第\ref{ch:logistic}节的逻辑回归利用线性得分和 Sigmoid 函数预测类别概率。现在换一种建模方式：如果需要根据“是否有稳定工作”和“是否有房产”判断是否批准一笔教学用贷款，可以先问是否有工作；如果有，就预测批准；如果没有，再问是否有房产。这样由一系列判断条件组成的模型称为\textbf{决策树}（Decision Tree）。
+
+决策树包含\textbf{根节点}、用于继续判断的\textbf{内部节点}以及输出类别的\textbf{叶节点}。它通过递归划分数据建立预测规则，不必预先假设 $\boldsymbol w^{\mathsf T}\boldsymbol x+b$ 这样的线性边界。以下贷款数据仅为教学构造，不代表实际银行审批政策。
+
+\begin{center}
+\begin{tabular}{cccc}\toprule
+客户&有稳定工作&有房产&批准贷款\\\midrule
+1&是&是&是\\
+2&是&否&是\\
+3&是&否&是\\
+4&否&是&是\\
+5&否&否&否\\
+6&否&否&否\\\bottomrule
+\end{tabular}
+\end{center}
+面对这六条数据，应当优先按照哪个特征划分？如果只是凭经验选择，就无法解释为什么该划分更合理。决策树提供了可计算的\textbf{结点纯度}准则\cite[第4章]{zhou2016}\cite[第5章]{lihang2019}。
+
+\subsection{信息熵：度量类别不确定性}
+
+设节点中共有 $K$ 个类别，第 $k$ 类的样本比例是 $p_k$，并满足 $p_k\geq0$、$\sum_{k=1}^{K}p_k=1$。\textbf{信息熵}（Entropy）定义为
+\begin{equation}\label{eq:tree-entropy}
+\boxed{H(D)=-\sum_{k=1}^{K}p_k\log_2p_k,}
+\end{equation}
+其中约定 $0\log_2 0=0$。对二分类问题，若正类比例为 $p$，则
+\begin{equation}\label{eq:binary-entropy}
+H(p)=-p\log_2p-(1-p)\log_2(1-p).
+\end{equation}
+如果一个节点中两类各占一半，熵为 $1$；若所有样本属于同一类，熵为 $0$。也就是说，\textbf{类别比例越集中，节点越纯；类别越均衡，节点越不确定。}
+
+这一结论也可通过求导核对。对 $0<p<1$，
+\[
+H'(p)=\log_2\frac{1-p}{p},\qquad
+H''(p)=-\frac1{p(1-p)\ln2}<0.
+\]
+因此 $H(p)$ 在 $p=1/2$ 处取得唯一最大值 $1$。这里的熵使用以 $2$ 为底的对数，所以单位为比特；改用自然对数只会改变数值单位，不改变相同数据下信息增益的排序。
+
+\subsection{信息增益：如何评价一次划分}
+
+设当前训练样本集合为 $D$，候选特征 $A$ 将其划分成互不重叠的 $D_1,\ldots,D_V$。划分后的加权平均熵为
+\begin{equation}\label{eq:tree-conditional-entropy}
+H(D\mid A)=\sum_{v=1}^{V}\frac{|D_v|}{|D|}H(D_v).
+\end{equation}
+需要加权的原因很直观：一个含有 $100$ 个样本的子节点对总样本的不确定性贡献，应当大于只含 $1$ 个样本的子节点。
+
+\textbf{信息增益}定义为划分前后熵的减少量：
+\begin{equation}\label{eq:information-gain}
+\boxed{\operatorname{Gain}(D,A)=H(D)-H(D\mid A).}
+\end{equation}
+采用经验概率时，这个量也可理解为标签与候选划分特征的经验互信息。经典 ID3 算法在每个节点选择信息增益较大的特征；这属于\textbf{局部贪心选择}，不保证生成全局最优的树。
+
+\subsection{手工计算：选择根节点}
+
+先算整个训练集的熵。六个样本中四个获批、两个未获批，因此
+\[
+H(D)=-\frac46\log_2\frac46-\frac26\log_2\frac26
+\approx\boxed{0.9183}.
+\]
+\textbf{方案 A：按照是否有稳定工作划分。} 有工作的三人都获批，熵为 $0$；无工作的三人中一人获批、两人未获批，熵约为 $0.9183$。于是
+\begin{align*}
+H(D\mid A)&=\frac36\times0+\frac36\times0.9183\approx0.4591,\\
+\operatorname{Gain}(D,A)&\approx0.9183-0.4591=\boxed{0.4591}.
+\end{align*}
+
+\textbf{方案 B：按照是否有房产划分。} 有房产的两人都获批，熵为 $0$；无房产的四人中有两人获批、两人未获批，熵为 $1$。因此
+\begin{align*}
+H(D\mid B)&=\frac26\times0+\frac46\times1\approx0.6667,\\
+\operatorname{Gain}(D,B)&\approx0.9183-0.6667=\boxed{0.2516}.
+\end{align*}
+比较得到 $0.4591>0.2516$，所以在根节点优先选择“有稳定工作”。对“无工作”的三个样本继续按“有房产”划分，便得到所有叶节点都纯净的决策规则。
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[level distance=16mm, every node/.style={font=\small,align=center},
+ level 1/.style={sibling distance=56mm},
+ level 2/.style={sibling distance=32mm},
+ edge from parent/.style={draw,-latex}]
+\node[draw,rounded corners,fill=pale,inner sep=5pt]{有稳定工作？}
+ child {node[draw,rounded corners,inner sep=5pt]{预测：批准} edge from parent node[left]{是}}
+ child {node[draw,rounded corners,fill=pale,inner sep=5pt]{有房产？}
+  child {node[draw,rounded corners,inner sep=5pt]{预测：批准} edge from parent node[left]{是}}
+  child {node[draw,rounded corners,inner sep=5pt]{预测：拒绝} edge from parent node[right]{否}}
+  edge from parent node[right]{否}};
+\end{tikzpicture}
+\caption{六条教学样本得到的决策树；各分支是训练数据上的规则，不是现实审批标准。}
+\label{fig:toy-decision-tree}
+\end{figure}
+
+\subsection{基尼指数与其他划分准则}
+
+除了信息熵，另一种常见的纯度指标是\textbf{基尼不纯度}（Gini Impurity）：
+\begin{equation}\label{eq:gini}
+\boxed{G(D)=1-\sum_{k=1}^{K}p_k^2.}
+\end{equation}
+二分类时，
+\[
+G(p)=1-p^2-(1-p)^2=2p(1-p).
+\]
+其最大值为 $1/2$（两类各占一半），最小值为 $0$（纯节点）。基尼指数与熵的数值范围不相同，但都用于衡量类别混杂程度。
+
+\begin{center}
+\begin{tabularx}{\textwidth}{p{29mm}p{27mm}X}\toprule
+算法&常用准则&划分方式与特点\\\midrule
+ID3&信息增益&离散属性可以产生多个分支\\
+C4.5&信息增益率&对多取值属性的偏好作一定调整\\
+CART 分类树&基尼不纯度&通常采用二叉划分\\\bottomrule
+\end{tabularx}
+\end{center}
+在实际任务中，特征是否连续、是否存在缺失值、剪枝策略及其他约束也会影响建树方式，不能仅凭划分准则判断某种算法一定最优。
+
+\subsection{决策树过拟合与剪枝}
+
+如果不断划分，甚至让每个叶节点只包含一个训练样本，决策树可能把训练数据中的偶然性也记住。第五章介绍的过拟合问题在此同样存在。控制复杂度常见两条路线：
+
+\textbf{预剪枝}在建树时设置停止条件，例如最大深度、叶节点最少样本量或最小不纯度改进；\textbf{后剪枝}先形成较大的树，再去掉贡献不大的分支。CART 常使用代价复杂度思想：
+\begin{equation}\label{eq:cost-complexity-tree}
+R_\alpha(T)=R(T)+\alpha|T|,
+\end{equation}
+其中 $R(T)$ 表示约定的树拟合代价，$|T|$ 是叶节点数量，$\alpha\geq0$ 控制复杂度惩罚。它与第\ref{ch:regularization}节的正则化具有相同的权衡思想，但所惩罚的对象不同。
+
+\subsection{决策树与逻辑回归的区别}
+
+逻辑回归根据线性得分建立概率模型，并通过优化对数损失估计参数；普通的轴平行决策树则通过递归划分特征空间得到分段规则。决策树可用叶节点样本比例给出类别概率估计，但这种比例未必经过概率校准。对于本章仅有六条样本的例子，即使训练准确率为 $100\%$，也不能断言对新的贷款样本具有良好泛化能力。
+
+\subsection{本章小结}
+
+构建分类决策树的逻辑是：\textbf{计算节点纯度 $\rightarrow$ 比较候选划分 $\rightarrow$ 选择当前最优特征 $\rightarrow$ 递归划分 $\rightarrow$ 满足停止条件后预测}。信息熵、信息增益和基尼指数解释了它如何选择特征，剪枝解释了它如何避免对训练样本过度适应。

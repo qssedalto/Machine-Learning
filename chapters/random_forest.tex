@@ -1,0 +1,118 @@
+\section{Bagging 与随机森林}\label{ch:random-forest}
+
+\subsection{为什么要组合多棵决策树}
+
+上一章用一棵决策树递归划分样本。决策树的优点是规则直观，但如果训练样本稍有变化，根节点的最佳划分可能也随之改变，整棵树的结构甚至会明显不同。这是模型对训练数据变化比较敏感的表现，也与第\ref{ch:generalization}节讨论的\textbf{预测方差}有关。
+
+一种改进方法不是继续修补单棵树，而是训练许多具有差异的树，再组合它们的预测。这类方法属于\textbf{集成学习}（Ensemble Learning）\cite[第8章]{zhou2016}。假设共有 $B$ 个基学习器 $h_1,\ldots,h_B$，回归问题可用平均预测
+\begin{equation}\label{eq:ensemble-average}
+\boxed{\hat f(x)=\frac1B\sum_{b=1}^{B}h_b(x).}
+\end{equation}
+分类问题常采用多数投票，或对各树的概率估计求平均后再作分类。例如五棵树对“是否购买”的预测依次为“是、是、否、是、否”，则多数投票得到“是”。但\textbf{模型数量多并不保证预测一定正确}：如果所有模型产生类似的系统性错误，集成也不能把错误自动消除。
+
+\subsection{Bootstrap：有放回地重复抽样}
+
+\textbf{Bagging} 是 Bootstrap Aggregating 的缩写，意思是“自助采样后进行聚合”。它先用有放回抽样生成若干训练集，再分别训练基学习器，最后对预测进行平均或投票\cite[第8章]{james2023}。
+
+假设原始训练样本为 $D=\{A,B,C,D,E\}$，每次抽一个样本并立即放回，总共抽五次。三次独立生成的训练集可能是
+\[
+D^{(1)}=(A,C,C,E,B),\quad
+D^{(2)}=(D,A,A,B,E),\quad
+D^{(3)}=(C,B,E,E,D).
+\]
+虽然每组都进行了五次抽样，但其中可以出现重复样本，也可能遗漏某个原始样本。这使各棵决策树有机会学到不同的划分规则。
+
+\subsection{为什么约有 63.2\% 的样本会出现}
+
+设原始数据有 $n$ 个样本，每次从中均匀地、有放回地抽一个，共抽取 $n$ 次。对于一个固定样本 $x_i$，一次未抽到它的概率为 $1-1/n$。由于抽样独立，连续 $n$ 次都没抽到的概率为
+\begin{equation}\label{eq:bootstrap-oob-prob}
+P(x_i\text{ 未入样})=\left(1-\frac1n\right)^n.
+\end{equation}
+利用极限
+\[
+\lim_{n\to\infty}\left(1-\frac1n\right)^n=e^{-1}\approx0.3679,
+\]
+得到
+\begin{equation}\label{eq:bootstrap-coverage}
+\boxed{P(x_i\text{ 至少出现一次})
+=1-\left(1-\frac1n\right)^n\approx0.6321.}
+\end{equation}
+所以，当 $n$ 较大时，一组进行了 $n$ 次抽样的 Bootstrap 样本，平均只包含约 $63.2\%$ 的\emph{不同原始样本}。未被该组抽到的原始样本称为\textbf{包外样本}（Out-of-Bag，OOB）。它们可以用于评估某棵树对未参与其训练样本的预测，并进一步构造 OOB 误差估计。$63.2\%$ 是大样本近似，有限样本应使用式\eqref{eq:bootstrap-coverage}中的精确表达式。
+
+\subsection{为什么平均预测可以降低方差}
+
+从简单的概率模型入手。令 $Z_1,\ldots,Z_B$ 表示 $B$ 个预测随机变量，假设它们具有相同方差
+\[
+\operatorname{Var}(Z_b)=\sigma^2.
+\]
+对这些变量取平均 $\bar Z=B^{-1}\sum_{b=1}^{B}Z_b$，利用方差和协方差公式：
+\begin{align}
+\operatorname{Var}(\bar Z)
+&=\frac1{B^2}\operatorname{Var}\left(\sum_{b=1}^{B}Z_b\right)\notag\\
+&=\frac1{B^2}\left[
+\sum_{b=1}^{B}\operatorname{Var}(Z_b)
++2\sum_{i<j}\operatorname{Cov}(Z_i,Z_j)\right].
+\label{eq:ensemble-variance-general}
+\end{align}
+若各变量彼此不相关，则协方差均为零，于是
+\[
+\boxed{\operatorname{Var}(\bar Z)=\frac{\sigma^2}{B}.}
+\]
+可见，平均会让随机波动得到一定抵消。但真实树模型通常共享同一原始数据，预测不会完全不相关。
+
+进一步假设任意两棵树的预测都具有相同相关系数 $\rho$，即对 $i\ne j$，
+\[
+\operatorname{Cov}(Z_i,Z_j)=\rho\sigma^2.
+\]
+式\eqref{eq:ensemble-variance-general}变为
+\begin{align}
+\operatorname{Var}(\bar Z)
+&=\frac1{B^2}\big[B\sigma^2+B(B-1)\rho\sigma^2\big]\notag\\
+&=\boxed{\sigma^2\left(\rho+\frac{1-\rho}{B}\right).}
+\label{eq:ensemble-correlation}
+\end{align}
+这条式子建立在\emph{等方差、等两两相关}的假设之上，适合说明集成的统计原理，不能直接理解为任意随机森林的分类测试误差公式。
+
+\begin{center}
+\begin{tabular}{p{28mm}p{50mm}p{60mm}}\toprule
+相关情况&集成方差&含义\\\midrule
+$\rho=0$&$\sigma^2/B$&增加模型数明显降低方差\\
+$0<\rho<1$&$\sigma^2[\rho+(1-\rho)/B]$&降低方差，但有相关性造成的极限\\
+$\rho=1$&$\sigma^2$&模型完全同向波动，平均不起作用\\\bottomrule
+\end{tabular}
+\end{center}
+
+例如单模型方差为 $1$，有 $B=10$ 棵树，相关系数为 $0.3$，则
+\[
+\operatorname{Var}(\bar Z)=0.3+\frac{0.7}{10}=\boxed{0.37}.
+\]
+若树的数量增加到 $100$ 且相关性不变，则方差约为 $0.307$。可见，即使继续增加模型，相关性仍限制了改善幅度。\textbf{降低基学习器之间的相关性，和增加基学习器数量一样值得考虑。}
+
+\subsection{随机森林增加了什么机制}
+
+\textbf{随机森林}（Random Forest）通常采用 Bootstrap 样本训练多棵决策树，同时在\emph{每一个节点}随机挑选部分候选特征，再从这些候选特征中选择较好的划分。它把样本随机性与特征随机性结合起来，从而减少各棵树反复使用同一个强特征进行划分的倾向。
+
+例如数据有六个特征 $(X_1,\ldots,X_6)$，某个节点只允许检查随机抽出的 $\{X_1,X_3,X_5\}$。即使 $X_2$ 在全部特征中划分效果最好，只要它不在本节点候选集合中，也不能被选中。下一节点会重新抽取候选特征。
+
+设全部特征数为 $p$，每个节点候选特征数为 $m$。$m=p$ 时，算法接近常规决策树 Bagging；$m=1$ 时，每个节点只有一个候选特征；分类随机森林中经常取 $m\approx\sqrt p$ 作为起点，但这并非必须遵守的常数。
+
+\begin{center}
+\begin{tabularx}{\textwidth}{p{31mm}XX}\toprule
+比较&决策树 Bagging&随机森林\\\midrule
+训练样本&不同 Bootstrap 样本&不同 Bootstrap 样本\\
+节点候选特征&通常考察全部特征&每节点随机挑选部分特征\\
+主要随机性&样本扰动&样本扰动加特征扰动\\
+预测汇总&平均或投票&平均或投票\\\bottomrule
+\end{tabularx}
+\end{center}
+随机森林通过引入特征随机性，可能降低树之间的预测相关性；但过小的候选特征数也可能增加单棵树的预测偏差。二者需要根据具体数据权衡。
+
+\subsection{包外评价与模型泛化}
+
+对于第 $b$ 棵树，只能用\emph{没有参与该树训练}的样本进行包外预测。对一个原始训练样本，汇总所有把它视为包外样本的树的预测，可构造 OOB 评价。它不等同于单独保留的测试集，也不意味着可以反复用测试集调参。
+
+另外，多棵树不是“完全独立的决策树”，因为它们来自同一个训练样本总体，并共享特征与算法。增加树的数量一般有助于稳定结果，但不会保证测试准确率单调提升，更不会排除标签噪声、数据泄漏或分布变化的影响。应按第\ref{ch:generalization}节的方法选择合适的验证流程。
+
+\subsection{本章小结}
+
+Bagging 的核心是\textbf{Bootstrap 抽样加预测聚合}；随机森林在此基础上增加\textbf{每节点随机候选特征}。式\eqref{eq:ensemble-correlation}强调了一个重要统计学认识：平均能够减小模型预测波动的程度，取决于模型数量，也取决于预测之间的相关性。

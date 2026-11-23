@@ -1,171 +1,36 @@
-# 机器学习 · 公式推导与基础方法
+# 机器学习：从直观例子到公式推导
 
-> **这个仓库放的是什么？** 一份中文机器学习学习笔记，涵盖基本概念、最小二乘法、梯度下降、逻辑回归及模型评价，保留核心数学推导与计算例子。  
-> **从哪里开始？** 要读成品看 [main.pdf](main.pdf)；要改正文进入 [chapters/](chapters/)；要改版式打开 [config/preamble.tex](config/preamble.tex)；要改摘要打开 [main.tex](main.tex)。
+本仓库为中文机器学习学习笔记，正文采用“直观问题—数学定义—逐步推导—手工计算—适用条件”的结构。第一至第五课保留原文，第六至第十课整理为同风格的 LaTeX 教材章节。新增章节只包括理论、例题、公式推导和说明，不包含 Python 实验。
 
-## 目录和正文的组织方式
+阅读入口：[main.pdf](main.pdf)（构建产物可能暂时落后于源码）；主文件：[main.tex](main.tex)；版式：[config/preamble.tex](config/preamble.tex)；参考文献：[references.bib](references.bib)。
 
-PDF 仅收录五个核心主题、数学符号附录及修订记录；目录只显示一级标题。阅读指南、代码清单与进阶主题的 LaTeX 源文件仍保存在仓库中，但不进入正式 PDF。Python 程序也继续保留在 `code/` 目录供独立使用。
+## 十课目录
 
-## 正文结构
+| 课次 | 主题 | 核心内容 | 正文 |
+|---|---|---|---|
+| 1 | 机器学习基础 | 特征、模型、损失函数与经验风险 | [基础](chapters/foundations.tex) |
+| 2 | 线性回归与最小二乘 | RSS、MSE、导数与正规方程 | [最小二乘](chapters/least_squares.tex) |
+| 3 | 梯度下降法 | 学习率、迭代与梯度 | [梯度下降](chapters/gradient_methods.tex) |
+| 4 | 逻辑回归 | Sigmoid、似然、交叉熵 | [逻辑回归](chapters/logistic_regression.tex) |
+| 5 | 模型评价 | 泛化、交叉验证、数据泄漏 | [模型评价](chapters/generalization.tex) |
+| 6 | 正则化 | Ridge、Lasso、L1/L2、参数收缩 | [正则化](chapters/regularization.tex) |
+| 7 | 决策树 | 信息熵、信息增益、基尼指数、剪枝 | [决策树](chapters/decision_trees.tex) |
+| 8 | Bagging 与随机森林 | Bootstrap、OOB、预测相关性与方差 | [随机森林](chapters/random_forest.tex) |
+| 9 | AdaBoost | 加权错误率、指数损失、权重更新 | [AdaBoost](chapters/adaboost.tex) |
+| 10 | 支持向量机 | 超平面、几何间隔、凸二次规划 | [SVM](chapters/support_vector_machines.tex) |
 
-正文从建模与损失函数逐步过渡至参数估计、数值优化、概率分类和模型评价。
+## 源码组织与维护
 
-| 顺序 | 课程 | 先掌握什么 | 正文 |
-| --- | --- | --- | --- |
-| 1 | 机器学习基础 | 样本、特征、模型、参数、损失函数与经验风险 | [机器学习基础](chapters/foundations.tex) |
-| 2 | 线性回归与最小二乘 | RSS、MSE、偏导数、正规方程 | [线性回归](chapters/least_squares.tex) |
-| 3 | 梯度下降法 | 下降方向、学习率、迭代更新与梯度 | [梯度下降法](chapters/gradient_methods.tex) |
-| 4 | 逻辑回归 | Sigmoid、条件概率、伯努利似然、交叉熵 | [逻辑回归](chapters/logistic_regression.tex) |
-| 5 | 模型评价 | 过拟合、训练与测试误差、交叉验证、混淆矩阵 | [模型评价](chapters/generalization.tex) |
+main.tex 负责标题、摘要、目录和十个章节的顺序装配。chapters/ 每个正式章节各有一个 tex 文件。config/preamble.tex 统一字体、页边距、数学公式、图表和引用设置。appendices/notation.tex 是常用符号表；appendices/development_log.tex 记录版本；references.bib 保存四种既有教材参考资料。
 
+仓库原有的 chapters/preface.tex、chapters/experiments.tex、chapters/open_questions.tex 仍是未参与正式构建的保留文件。config/titlepage.tex 是未启用的备用封面。code/ 中原有的七个 Python 数值实验以及 requirements.txt 均未因本次新增课程而扩展或修改。第六至第十课不新增 Python 脚本、数据分析依赖或实验章节。
 
-**请注意：** 这份笔记中的学生成绩、西瓜分类等都是为了教学而构造的例子。曲线与训练结果是否能泛化，必须通过独立数据检验。
+## 编译
 
-## 项目是怎样组成的
+项目使用 ctexart、XeLaTeX 与 Biber。保留整个目录结构，设置 main.tex 为根文件。在具备完整 LaTeX 发行版的环境中可执行：
 
-`main.tex` 是入口，但**不承载全部正文**。编译器从中依次读取章节、附录与文献，再生成 PDF。
+    latexmk -xelatex -interaction=nonstopmode -file-line-error main.tex
 
-```text
-Machine-Learning/
-├── main.tex                       主文件：标题、摘要、目录、章节装配
-├── main.pdf                       已提交的 PDF 成品
-├── README.md                      本文件：目录索引与维护说明
-├── references.bib                 文献数据库
-├── requirements.txt               Python 实验依赖
-├── .gitignore                     忽略临时文件的规则
-├── .github/
-│   └── workflows/
-│       └── latex.yml              自动检查 Python 并编译 PDF
-├── config/
-│   ├── preamble.tex               全局版式、字体、公式和代码样式
-│   └── titlepage.tex              备用独立封面（当前未启用）
-├── chapters/
-│   ├── preface.tex                引言
-│   ├── foundations.tex            从数据到优化问题
-│   ├── least_squares.tex          线性回归与最小二乘估计
-│   ├── gradient_methods.tex       梯度下降与步长
-│   ├── logistic_regression.tex    逻辑回归与对数损失
-│   ├── generalization.tex         模型评价、过拟合和泛化
-│   ├── experiments.tex            手工算例与 Python 验证
-│   └── open_questions.tex         选读：下一阶段学习路线
-├── code/
-│   ├── grid_search_intro.py       第一课：网格搜索入门
-│   ├── ordinary_least_squares_intro.py 第二课：最小二乘手算对应
-│   ├── gradient_descent_intro.py  第三课：单变量梯度下降
-│   ├── logistic_regression_intro.py 第四课：逻辑回归一步更新
-│   ├── linear_regression_demo.py  解析最小二乘 vs. 梯度下降
-│   ├── logistic_gradient_check.py 逻辑回归解析梯度的数值校验
-│   └── polynomial_comparison.py   多项式模型复杂度对比
-└── appendices/
-    ├── notation.tex               符号与记号约定
-    └── development_log.tex        修订记录
-```
+.github/workflows/latex.yml 会在 main 分支对应源文件更新时运行原有七个 Python 数值检查、使用 XeLaTeX 构建文档、上传 PDF，并在满足既有条件时尝试更新 main.pdf。新增章节的提交与 PDF 构建是分开的；如果工作流尚未成功运行，main.pdf 可能暂时还是旧版。
 
-## 01 / 根目录：文档的入口与输出
-
-| 文件 | 它负责什么 | 什么时候编辑 |
-| --- | --- | --- |
-| [`main.tex`](main.tex) | **总装配文件**：定义文档类；加载 `config/preamble.tex`；设置标题、作者、日期；写入**摘要与关键词**；生成目录；以 `\input` 按顺序加入各章节和附录；最后输出参考文献。 | 调整文章结构、摘要、关键词或章节顺序时。 |
-| [`main.pdf`](main.pdf) | 已纳入版本管理的 PDF 阅读版，是编译**产物**，不是正文源文件。 | 通常不手工编辑；由编译流程更新。它可能暂时落后于源代码，以实际构建结果为准。 |
-| [`README.md`](README.md) | 你正在阅读的项目地图，解释每个文件的职责与维护方法。 | 新增、删除或调整项目文件时同步更新。 |
-| [`references.bib`](references.bib) | 以 BibTeX/BibLaTeX 条目保存教材与著作等文献信息；正文用 `\cite{条目键}` 引用。 | 添加、核对或修订文献元数据时。 |
-| [`requirements.txt`](requirements.txt) | Python 数值实验的依赖清单；当前列出 NumPy 版本范围。 | 实验确实引入新依赖时。 |
-| [`.gitignore`](.gitignore) | 排除 `.aux`、`.log`、`.bbl` 等 LaTeX 辅助文件，以及 Python 缓存、虚拟环境和编辑器临时文件；**不忽略** `main.pdf`。 | 调整哪些生成文件需要跟踪时。 |
-| [`.github/workflows/latex.yml`](.github/workflows/latex.yml) | GitHub Actions 工作流：安装 Python 依赖、运行七个 Python 实验脚本，在 TeX Live 环境中用 XeLaTeX/Biber 构建 PDF，上传构建产物；满足条件时把变化后的 `main.pdf` 提交回 `main`。 | 修改 CI、编译环境、自动检查或 PDF 发布流程时。 |
-
-## 02 / config：全文排版与封面
-
-| 文件 | 具体职责 | 当前状态 |
-| --- | --- | --- |
-| [`config/preamble.tex`](config/preamble.tex) | 设置 A4 页边距、西文字体、宏包、章节标题颜色与间距、页眉页脚、定理环境、数学符号快捷命令、Python 代码框、图表及 GB/T 7714 文献样式。 | **正在使用**，由 `main.tex` 加载。中文字体交给 `ctexart` 的内置 Fandol 字体映射管理，避免在科技云重复覆盖字体。 |
-| [`config/titlepage.tex`](config/titlepage.tex) | 设计独立封面：主副标题、分隔线、版本和编译日期等。 | **目前未启用**：`main.tex` 使用 `\maketitle`，没有 `\input{config/titlepage}`。修改这个文件不会改变当前 PDF 的封面。 |
-
-## 03 / chapters：五个正文主题与三个保留的源文件
-
-`main.tex` 只引入五个主要章节。其余三个源文件保留作历史资料或后续独立参考，不参与当前 PDF 构建。
-
-| 文件 | 正文内容 | 主要关注点 |
-| --- | --- | --- |
-| [`chapters/preface.tex`](chapters/preface.tex) | 旧版阅读指南。 | 当前不编入 PDF。 |
-| [`chapters/foundations.tex`](chapters/foundations.tex) | 数据、模型族、损失函数、经验风险和学习任务的定义。 | 怎样从数据建模走向一个可求解的优化问题。 |
-| [`chapters/least_squares.tex`](chapters/least_squares.tex) | 线性回归、残差平方和、正规方程与相关条件。 | 最小二乘解从哪里来、何时存在或唯一。 |
-| [`chapters/gradient_methods.tex`](chapters/gradient_methods.tex) | 方向导数、负梯度、步长选择及一阶方法的性质。 | 为何下降、何时收敛、步长为什么重要。 |
-| [`chapters/logistic_regression.tex`](chapters/logistic_regression.tex) | Logistic 概率模型、伯努利似然、交叉熵及梯度。 | 分类损失如何由概率假设推导出来。 |
-| [`chapters/generalization.tex`](chapters/generalization.tex) | 训练与测试风险、过拟合、偏差—方差以及评价方法。 | 为什么训练误差低不保证新数据表现好。 |
-| [`chapters/experiments.tex`](chapters/experiments.tex) | 旧版 Python 实验展示。 | 当前不编入 PDF，程序本身仍可独立运行。 |
-| [`chapters/open_questions.tex`](chapters/open_questions.tex) | 旧版进阶主题。 | 当前不编入 PDF。 |
-
-## 04 / code：七个可运行的 Python 实验
-
-其中四个是对应教学手算的新增入门脚本，另三个是保留的数值实验；**LaTeX 编译不会自动执行 Python**。GitHub Actions 会单独运行它们。
-
-| 文件 | 做了什么 | 对应正文 |
-| --- | --- | --- |
-| [`code/grid_search_intro.py`](code/grid_search_intro.py) | 从候选斜率中搜索 MSE 最小值，核对 $w=2$。 | 第一课 |
-| [`code/ordinary_least_squares_intro.py`](code/ordinary_least_squares_intro.py) | 使用四样本表格计算斜率、截距与 MSE。 | 第二课 |
-| [`code/gradient_descent_intro.py`](code/gradient_descent_intro.py) | 打印 $f(x)=(x-3)^2$ 的迭代轨迹。 | 第三课 |
-| [`code/logistic_regression_intro.py`](code/logistic_regression_intro.py) | 用单个样本核对交叉熵梯度和一步更新。 | 第四课 |
-| [`code/linear_regression_demo.py`](code/linear_regression_demo.py) | 用 NumPy 的最小二乘求解与手写全批量梯度下降比较回归参数。 | `least_squares.tex`、`gradient_methods.tex`、`experiments.tex` |
-| [`code/logistic_gradient_check.py`](code/logistic_gradient_check.py) | 通过中心差分近似梯度，检查逻辑回归负对数似然的解析梯度。 | `logistic_regression.tex` |
-| [`code/polynomial_comparison.py`](code/polynomial_comparison.py) | 在固定随机种子的构造数据上比较不同次数多项式回归的误差。 | `generalization.tex`、`experiments.tex` |
-
-> **区分两种工作**：`code/*.py` 是可执行程序，而 `chapters/experiments.tex` 是已经从当前 PDF 中移出的历史实验说明。程序仍由 GitHub Actions 单独检验。
-
-## 05 / appendices：正文之外的辅助材料
-
-| 文件 | 它的作用 |
-| --- | --- |
-| [`appendices/notation.tex`](appendices/notation.tex) | 统一列出 `m`、`p`、`X`、`J(θ)`、经验风险等数学符号及其约定，减少跨章节歧义。 |
-| [`appendices/development_log.tex`](appendices/development_log.tex) | 记录文稿版本、修订时间与内容变更；包含 v0.1 至 v0.5 的主要修订记录。 |
-
-## 常见修改：该打开哪个文件？
-
-| 你想做的事 | 打开这里 |
-| --- | --- |
-| 改摘要或关键词 | [`main.tex`](main.tex) 的 `abstract` 环境及后续关键词行 |
-| 改作者、标题、日期 | [`main.tex`](main.tex) 的 `\author`、`\title`、`\date` |
-| 改中文排版或全局字体 | [`config/preamble.tex`](config/preamble.tex)；先检查 `ctexart` 的默认设置，避免重复定义 |
-| 改页边距、标题样式、代码框 | [`config/preamble.tex`](config/preamble.tex) |
-| 改某一节数学推导 | 对应的 [`chapters/`](chapters/) 文件 |
-| 改实验算法与数据 | 对应的 [`code/`](code/) 脚本，并同步核对正文说明 |
-| 加一条参考文献 | [`references.bib`](references.bib)，并在正文中引用 |
-| 增加数学符号解释 | [`appendices/notation.tex`](appendices/notation.tex) |
-| 记录修改历史 | [`appendices/development_log.tex`](appendices/development_log.tex) |
-| 增加全新章节 | 新建 `chapters/新主题.tex`，并在 [`main.tex`](main.tex) 加入对应的 `\input` |
-
-## 编译与同步
-
-**中国科技云 / 其他在线 LaTeX 编辑器**
-
-1. 上传**完整项目**并保留文件夹层级；不能只上传 `main.tex`。
-2. 将 `main.tex` 设为主文档，编译器选 **XeLaTeX**。
-3. 项目采用 `biblatex` + **Biber**。参考文献未更新时，检查平台的 Biber 处理是否完成，然后再次编译。
-4. 出现缺字或字体替代警告时，优先查看编译日志与 `config/preamble.tex`；不要把字体问题误认为章节未上传。
-
-**本地运行**
-
-```sh
-python -m pip install -r requirements.txt
-python code/grid_search_intro.py
-python code/ordinary_least_squares_intro.py
-python code/gradient_descent_intro.py
-python code/logistic_regression_intro.py
-python code/linear_regression_demo.py
-python code/logistic_gradient_check.py
-python code/polynomial_comparison.py
-latexmk -xelatex -interaction=nonstopmode -file-line-error main.tex
-```
-
-最后一条命令需要完整的 TeX Live、XeLaTeX、latexmk 和 Biber 环境。
-
-**GitHub 自动构建**
-
-- 修改正文、配置、附录、代码、依赖、文献或工作流文件，推送到 `main` 后会触发 [自动构建](.github/workflows/latex.yml)；单独修改本 README **不触发**该工作流。
-- 工作流会检查七个 Python 实验并生成 PDF，上传为 Actions 构建产物。
-- 由 `main` 分支的 `push` 触发时，如 PDF 有变化，工作流尝试自动更新仓库中的 `main.pdf`；Pull Request 和手动触发不会自动回写 PDF。
-- GitHub Actions 的系统字体与中国科技云可能不同。当前工作流仍安装 Noto 字体包，但正文使用的中文字体由 `ctexart` 设置，不再依赖手动指定 Noto 字体名称。
-
----
-
-**维护原则**：教学正文写在 `chapters/`，排版规则放在 `config/`，可运行实验放在 `code/`，文献条目放在 `references.bib`。修改数学结论时，保留成立条件与证据；新增文件时，及时更新这份指南。
+所有教学数据均为构造例子；训练目标的最优值与泛化能力是不同概念。

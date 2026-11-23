@@ -1,0 +1,140 @@
+\section{Boosting 与 AdaBoost}\label{ch:adaboost}
+
+\subsection{从 Bagging 到逐轮改进}
+
+上一章的 Bagging 与随机森林分别训练多个相对独立的基学习器，再组合其预测。另一条集成学习路线是\textbf{Boosting}（提升法）：新的学习器依赖前面已经得到的模型，逐轮改进预测。这两种机制不能混为一谈。
+
+可以把 Bagging 理解为“多个人分别作答再投票”，把 Boosting 理解为“先尝试一次，后续逐轮针对难点改进”。这只是类比：不同 Boosting 算法具体采用的改进机制各不相同。本章聚焦经典二分类算法 \textbf{AdaBoost}（Adaptive Boosting），它根据当前分类器的错误情况调整训练样本权重\cite[第8章]{zhou2016}\cite[第8章]{lihang2019}。
+
+\subsection{分类器的加权组合}
+
+设训练集为
+\[
+D=\{(\boldsymbol x_i,y_i)\}_{i=1}^{n},\qquad y_i\in\{-1,+1\}.
+\]
+AdaBoost 依次训练 $M$ 个弱分类器 $h_m(\boldsymbol x)\in\{-1,+1\}$。与普通多数投票不同，各分类器具有权重 $\alpha_m$：
+\begin{equation}\label{eq:adaboost-model}
+F(\boldsymbol x)=\sum_{m=1}^{M}\alpha_mh_m(\boldsymbol x),\qquad
+\boxed{H(\boldsymbol x)=\operatorname{sign}[F(\boldsymbol x)].}
+\end{equation}
+在 $F(\boldsymbol x)=0$ 的情况下需要约定平票规则。$\alpha_m$ 决定第 $m$ 个学习器的贡献大小；问题在于：\textbf{怎样根据训练表现确定它？}
+
+\subsection{为什么需要样本权重}
+
+令 $w_{m,i}$ 表示第 $m$ 轮训练时第 $i$ 个样本的权重。初始时各样本同等重要：
+\begin{equation}\label{eq:adaboost-init}
+w_{1,i}=\frac1n,\qquad \sum_{i=1}^{n}w_{m,i}=1.
+\end{equation}
+本轮分类器 $h_m$ 的\textbf{加权错误率}为
+\begin{equation}\label{eq:adaboost-error}
+\boxed{\varepsilon_m=\sum_{i=1}^{n}w_{m,i}
+\,\mathbf1\{y_i\ne h_m(\boldsymbol x_i)\}.}
+\end{equation}
+其中指示函数 $\mathbf1\{\cdot\}$ 在条件成立时为 $1$，否则为 $0$。普通错误率只看错分样本的个数，加权错误率还关心错分样本目前所占的权重。
+
+例如有五个样本，最初每个权重为 $0.2$，若某一分类器仅把第五个样本分错，那么加权错误率 $\varepsilon_1=0.2$。接下来应当给这一轮的分类器多大的投票权重？
+
+\subsection{从指数损失推导分类器权重}
+
+AdaBoost 可以从\textbf{指数损失}（Exponential Loss）的逐步最小化来理解。固定第 $m$ 轮已选择的分类器 $h_m$，考虑
+\begin{equation}\label{eq:adaboost-exp-loss}
+J(\alpha)=\sum_{i=1}^{n}w_{m,i}
+\exp[-\alpha y_i h_m(\boldsymbol x_i)].
+\end{equation}
+因为 $y_i$ 和 $h_m(\boldsymbol x_i)$ 均为 $\pm1$，所以分类正确时 $y_i h_m(\boldsymbol x_i)=1$，错误时为 $-1$。按正确与错误两组拆分，式\eqref{eq:adaboost-exp-loss}等于
+\[
+J(\alpha)=(1-\varepsilon_m)e^{-\alpha}+\varepsilon_m e^\alpha.
+\]
+这变成了一个关于 $\alpha$ 的一元最优化问题。先求一阶导数：
+\[
+J'(\alpha)=-(1-\varepsilon_m)e^{-\alpha}
++\varepsilon_m e^\alpha.
+\]
+令导数为零并整理：
+\begin{align*}
+\varepsilon_m e^\alpha&=(1-\varepsilon_m)e^{-\alpha},\\
+e^{2\alpha}&=\frac{1-\varepsilon_m}{\varepsilon_m},\\
+2\alpha&=\ln\frac{1-\varepsilon_m}{\varepsilon_m}.
+\end{align*}
+最终得到核心公式
+\begin{equation}\label{eq:adaboost-alpha}
+\boxed{\alpha_m=\frac12\ln\frac{1-\varepsilon_m}{\varepsilon_m}.}
+\end{equation}
+当 $0<\varepsilon_m<1$ 时，$J''(\alpha)=(1-\varepsilon_m)e^{-\alpha}+\varepsilon_m e^\alpha>0$，所以该驻点是唯一全局最小点。
+
+式\eqref{eq:adaboost-alpha}表明：当 $\varepsilon_m=0.2$，有 $\alpha_m=\frac12\ln4\approx0.6931$；当 $\varepsilon_m=0.5$ 时，$\alpha_m=0$，表示该学习器没有正向投票贡献。若 $\varepsilon_m>0.5$，计算得到负权重；标准二分类 AdaBoost 通常要求本轮基学习器优于随机猜测，必要时翻转预测或停止本轮训练。当 $\varepsilon_m=0$ 时，公式趋于无穷大，实际训练通常单独处理完美分类器并终止。
+
+\subsection{样本权重的更新公式}
+
+分类器权重确定之后，AdaBoost 更新每个训练样本的权重：
+\begin{equation}\label{eq:adaboost-reweight}
+\boxed{
+w_{m+1,i}=
+\frac{w_{m,i}\exp[-\alpha_m y_i h_m(\boldsymbol x_i)]}{Z_m},
+}
+\end{equation}
+其中
+\begin{equation}\label{eq:adaboost-normalization}
+Z_m=\sum_{i=1}^{n}w_{m,i}
+\exp[-\alpha_m y_i h_m(\boldsymbol x_i)]
+\end{equation}
+是使新权重之和等于 $1$ 的归一化因子。分类正确的样本在归一化前乘以 $e^{-\alpha_m}$，分类错误的样本乘以 $e^{\alpha_m}$。因此，\textbf{被错分样本相对于正确样本的权重会上升}。
+
+\subsection{手工计算一次权重调整}
+
+回到五个等权样本的例子，前四个分类正确、第五个分类错误。初始权重都是 $0.2$，加权错误率为 $0.2$。首先算分类器权重：
+\[
+\alpha_1=\frac12\ln\frac{0.8}{0.2}
+=\frac12\ln4\approx0.6931.
+\]
+因此 $e^{\alpha_1}=2$、$e^{-\alpha_1}=0.5$，归一化因子为
+\[
+Z_1=0.8\times0.5+0.2\times2
+=\boxed{0.8}.
+\]
+对每个正确样本，新权重是
+\[
+w_{\mathrm{correct}}=\frac{0.2\times0.5}{0.8}
+=\boxed{0.125};
+\]
+而错分样本的新权重是
+\[
+w_{\mathrm{wrong}}=\frac{0.2\times2}{0.8}
+=\boxed{0.5}.
+\]
+\begin{center}
+\begin{tabular}{lccccc}\toprule
+样本&A&B&C&D&E\\\midrule
+首轮权重&0.200&0.200&0.200&0.200&0.200\\
+分类情况&正确&正确&正确&正确&错误\\
+次轮权重&0.125&0.125&0.125&0.125&0.500\\\bottomrule
+\end{tabular}
+\end{center}
+新权重相加为 $4\times0.125+0.5=1$，可直接核对归一化结果。第五个样本从总体权重的 $20\%$ 升至 $50\%$，所以下一轮的弱学习器会更加关注它。这一例子同时解释了\textbf{分类器权重}和\textbf{样本权重}的不同作用：前者用于最终组合，后者用于后续训练。
+
+\subsection{指数损失、前向分步与局限性}
+
+把当前累计得分记为 $F_{m-1}(\boldsymbol x)$，第 $m$ 轮添加一项 $\alpha_mh_m(\boldsymbol x)$：
+\[
+F_m(\boldsymbol x)=F_{m-1}(\boldsymbol x)
++\alpha_m h_m(\boldsymbol x).
+\]
+AdaBoost 因而可理解为一种\textbf{前向分步加法模型}：每轮根据当前样本权重选取弱学习器，并选择新的系数。常见的弱学习器是\textbf{决策树桩}，即只有一次主要划分的简单决策树。这建立了本章与第\ref{ch:decision-tree}节的联系。
+
+AdaBoost 的一个局限是：如果某些训练标签本身错误，算法可能反复提高这些难以正确分类的样本的权重，导致对噪声较敏感。Boosting 也不仅指 AdaBoost；其他提升方法可能基于残差或不同的损失函数逐步改进，不能把本章的权重更新公式套用到所有 Boosting 算法。
+
+\subsection{与 Bagging 的联系和区别}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{p{29mm}XX}\toprule
+比较项目&Bagging&经典 AdaBoost\\\midrule
+基学习器训练&可分别训练，依赖相对较弱&逐轮训练，后一轮依赖前一轮\\
+训练重点&通过样本扰动增加差异&通过样本权重关注难分类样本\\
+预测聚合&一般等权平均或投票&由 $\alpha_m$ 决定加权组合\\
+典型作用&稳定高方差学习器的预测&逐步构造更强的组合分类器\\\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{本章小结}
+
+AdaBoost 的核心是两次权重调整：根据加权错误率用式\eqref{eq:adaboost-alpha}确定\emph{本轮分类器的权重}，再根据式\eqref{eq:adaboost-reweight}确定\emph{下一轮训练样本的权重}。它展示了统计学习中另一种重要思想：通过一系列具有依赖关系的简单学习器，逐步构建复合模型。训练过程的改进仍须由独立数据评价其泛化效果。

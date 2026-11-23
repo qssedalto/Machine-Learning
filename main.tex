@@ -12,20 +12,28 @@
 \thispagestyle{plain}
 
 \begin{abstract}
-本文系统介绍机器学习的基本概念、线性回归与最小二乘估计、梯度下降法、逻辑回归以及模型评估与泛化。首先通过典型数据说明建模对象和损失函数，再从具体计算推导参数估计与迭代更新公式，进而讨论训练误差与测试误差的区别、交叉验证及常用评价指标。各部分在给出数学表达式时说明相关符号与适用条件，并结合数值算例展示计算过程。
+本文系统介绍机器学习的基本概念、线性回归与最小二乘估计、梯度下降法、逻辑回归、模型评价与泛化，并在此基础上讨论正则化与模型选择、决策树、Bagging 与随机森林、Boosting 与 AdaBoost，以及支持向量机。各章从直观问题出发，通过数学定义、逐步推导和手工数值算例说明主要算法的基本原理、成立条件与局限性。全文保持十个核心主题的连贯结构，强调统计学习中的训练目标、模型复杂度和泛化性能之间的联系。
 \end{abstract}
-\noindent\textbf{关键词：}机器学习；均方误差；线性回归；梯度下降；逻辑回归；泛化能力
+\noindent\textbf{关键词：}机器学习；最小二乘；梯度下降；逻辑回归；正则化；决策树；随机森林；AdaBoost；支持向量机；泛化能力
 
 % 目录只显示一级章节；二级标题完整保留在正文中。
 \setcounter{tocdepth}{1}
 \tableofcontents
 \clearpage
 
+% 第一至第五课：保留已有教学正文。
 \input{chapters/foundations}
 \input{chapters/least_squares}
 \input{chapters/gradient_methods}
 \input{chapters/logistic_regression}
 \input{chapters/generalization}
+
+% 第六至第十课：与前五课采用一致的数学推导和手算风格。
+\input{chapters/regularization}
+\input{chapters/decision_trees}
+\input{chapters/random_forest}
+\input{chapters/adaboost}
+\input{chapters/support_vector_machines}
 
 \appendix
 \input{appendices/notation}
