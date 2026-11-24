@@ -522,7 +522,7 @@ J(w)=\frac12w^2+2C\max(0,1-w).
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}
 \begin{axis}[width=.76\textwidth,height=5.8cm,xmin=0,xmax=1.25,ymin=0,ymax=1.1,
-xlabel={$C$},ylabel={最优参数},grid=major,grid style={draw=gray!15},legend pos=east]
+xlabel={$C$},ylabel={最优参数},grid=major,grid style={draw=gray!15},legend style={at={(0.98,0.5)},anchor=east}]
 \addplot[accent,very thick] coordinates {(0,0) (.5,1) (1.25,1)};
 \addlegendentry{$w^*(C)$}
 \addplot[red!65!black,very thick,dashed] coordinates {(0,1) (.5,0) (1.25,0)};
