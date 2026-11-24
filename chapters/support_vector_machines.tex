@@ -4,7 +4,7 @@
 
 第\ref{ch:logistic}节的逻辑回归通过概率与对数损失建立线性分类器；第\ref{ch:decision-tree}节用递归划分建立规则。现在研究另一种经典思路：如果许多直线都能把两类训练样本完全分开，应该选哪一条？
 
-\textbf{支持向量机}（Support Vector Machine，SVM）的最大间隔思想是：在所有能正确分开训练样本的超平面中，优先选择\emph{距最近训练样本最远}的那个超平面\cite[第6章]{zhou2016}\cite[第7章]{lihang2019}。本章讨论训练数据\textbf{线性可分}的硬间隔情形。软间隔、对偶问题与核函数可以在掌握本章几何意义后继续学习。
+\textbf{支持向量机}（Support Vector Machine，SVM）的最大间隔思想是：在所有能正确分开训练样本的超平面中，优先选择\emph{距最近训练样本最远}的那个超平面\cite[第6章]{zhou2016}\cite[第7章]{lihang2019}。本章先讨论训练数据\textbf{线性可分}的硬间隔情形，再在扩展部分推导对偶问题、软间隔、SMO 求解算法与核函数。
 
 \subsection{分类超平面与符号约定}
 
@@ -180,6 +180,633 @@ y_D(\boldsymbol w^{\mathsf T}\boldsymbol x_D+b)
 
 本章的二维算例能证明手工得到的边界符合最大间隔几何原则，但仅有六个教学样本，不能据此推断真实任务的泛化能力。数据分布、特征缩放、噪声、正则化和测试设计仍会影响实际预测效果。
 
-\subsection{本章小结}
+\subsection{硬间隔部分小结}
 
 硬间隔 SVM 的推导链条是：\textbf{正确分类条件 $\rightarrow$ 点到超平面距离 $\rightarrow$ 几何间隔 $\rightarrow$ 函数间隔规范化 $\rightarrow$ 凸二次规划}。支持向量是恰好落在规范化间隔边界上的样本，它们直观地解释了哪些训练点对最大间隔分类边界具有关键作用。
+
+
+% 以下为原有硬间隔章节之后的扩展讲义。
+\subsection{进阶：从几何最优到可直接求解的二次规划}
+
+前面已经从最大间隔原则得到了式\eqref{eq:svm-primal}。下面进一步回答三个问题：计算机怎样求出最优参数？为什么只有少量训练样本出现在最终决策函数中？当数据不能线性分开时，应当怎样修改模型？这一部分以二分类为主，沿用前文的符号，结合凸优化理论进行推导\cite{liu2020,lihang2019,zhou2016}。
+
+\subsubsection{几何直觉：分类正确与分类间隔不是同一个目标}
+
+沿用图\ref{fig:svm-max-margin}的六个样本。先限定分类直线为 $x_1=t$，且 $-2<t<2$，则所有样本都能被正确分类。然而负类最近点 A 到直线的距离是 $t+2$，正类最近点 D 到直线的距离是 $2-t$。因此单侧最小几何间隔为
+\[
+\gamma(t)=\min\{t+2,2-t\}=2-|t|.
+\]
+这说明分类准确率相同的多个模型，几何间隔仍可能不同。$\gamma(t)$ 在 $t=0$ 处达到最大值 $2$。这只是在竖直直线族中进行的比较；对于任意方向的分割直线，由 A、D 分居两侧及其距离为 $4$，两点到直线的距离之和不超过 $4$，所以最小距离仍不可能超过 $2$。
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}
+\begin{axis}[width=.48\textwidth,height=5.5cm,xmin=-5,xmax=5,ymin=-3,ymax=3,
+xlabel={$x_1$},ylabel={$x_2$},title={不同的可行分割直线},axis lines=middle,
+grid=major,grid style={draw=gray!15},xtick={-4,-2,0,2,4}]
+\addplot[only marks,mark=*,color=accent] coordinates {(-2,0) (-3,-2) (-4,2)};
+\addplot[only marks,mark=square*,color=red!65!black] coordinates {(2,0) (3,-2) (4,2)};
+\addplot[dashed,orange!85!black,thick] coordinates {(-1,-3) (-1,3)};
+\addplot[black,very thick] coordinates {(0,-3) (0,3)};
+\addplot[dashed,orange!85!black,thick] coordinates {(1,-3) (1,3)};
+\node[anchor=south east,font=\scriptsize] at (axis cs:-2,0){A};
+\node[anchor=south west,font=\scriptsize] at (axis cs:2,0){D};
+\end{axis}
+\end{tikzpicture}\hfill
+\begin{tikzpicture}
+\begin{axis}[width=.48\textwidth,height=5.5cm,xmin=-2.3,xmax=2.3,ymin=0,ymax=2.4,
+xlabel={$t$},ylabel={$\gamma(t)$},title={最小几何间隔},grid=major,grid style={draw=gray!15}]
+\addplot[accent,very thick] coordinates {(-2,0) (0,2) (2,0)};
+\addplot[only marks,mark=*,red!65!black] coordinates {(0,2)};
+\node[anchor=south,font=\scriptsize] at (axis cs:0,2){最大值 $2$};
+\end{axis}
+\end{tikzpicture}
+\caption{相同分类正确率并不意味着相同间隔。左图三条直线均可分离原数据；右图给出竖直边界族的精确间隔函数。}
+\label{fig:svm-boundary-family}
+\end{figure}
+
+\subsubsection{列出全部约束并手工求解}
+
+将六个样本逐一代入原始问题，得到
+\begin{equation}\label{eq:svm-six-primal}
+\begin{aligned}
+\min_{w_1,w_2,b}\quad &\frac12(w_1^2+w_2^2)\\
+\text{s.t.}\quad
+&2w_1-b\geq1 &&(\mathrm A),\\
+&3w_1+2w_2-b\geq1 &&(\mathrm B),\\
+&4w_1-2w_2-b\geq1 &&(\mathrm C),\\
+&2w_1+b\geq1 &&(\mathrm D),\\
+&3w_1-2w_2+b\geq1 &&(\mathrm E),\\
+&4w_1+2w_2+b\geq1 &&(\mathrm F).
+\end{aligned}
+\end{equation}
+将 A、D 两个约束相加得到 $4w_1\geq2$，所以 $w_1\geq1/2$，进而
+\[
+\frac12(w_1^2+w_2^2)\geq\frac18.
+\]
+若取 $w_1=1/2,w_2=0$，A、D 两个约束要求 $b\leq0$ 且 $b\geq0$，故 $b=0$。其余四个约束左端分别为 $3/2,2,3/2,2$，均满足要求。于是下界可以达到，得到全局最优解
+\[
+\boxed{\boldsymbol w^*=(1/2,0)^{\mathsf T},\quad b^*=0,\quad p^*=1/8.}
+\]
+这里不是通过猜测边界得到最优性，而是先证明任一可行解的目标值不能低于 $1/8$，再构造达到下界的可行解。
+
+固定 $b=0$ 后，可行域的全部约束可进一步化简为
+\[
+w_1\geq\frac12,\qquad
+|w_2|\leq \min\left\{\frac{3w_1-1}{2},\frac{4w_1-1}{2}\right\}
+=\frac{3w_1-1}{2}.
+\]
+目标函数的等高线是圆，寻找目标值最小的点等价于寻找可行域距离原点最近的点。
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}
+\begin{axis}[width=.72\textwidth,height=7cm,axis equal image,
+xmin=-.65,xmax=1.55,ymin=-1.35,ymax=1.35,
+xlabel={$w_1$},ylabel={$w_2$},axis lines=middle,grid=major,grid style={draw=gray!15}]
+\addplot[draw=none,fill=green!45!white,fill opacity=.27] coordinates
+{(.5,-.25) (1.233333,-1.35) (1.55,-1.35) (1.55,1.35) (1.233333,1.35) (.5,.25) (.5,-.25)} \closedcycle;
+\addplot[green!45!black,thick] coordinates {(.5,-.25) (.5,.25)};
+\addplot[green!45!black,thick] coordinates {(.5,.25) (1.233333,1.35)};
+\addplot[green!45!black,thick] coordinates {(.5,-.25) (1.233333,-1.35)};
+\foreach \rad in {.25,.5,.75,1,1.25}{
+\addplot[accent,thin,domain=0:360,samples=100] ({\rad*cos(x)},{\rad*sin(x)});
+}
+\addplot[accent,very thick,domain=0:360,samples=100] ({.5*cos(x)},{.5*sin(x)});
+\addplot[only marks,mark=*,mark size=3pt,red!65!black] coordinates {(.5,0)};
+\node[anchor=south west,font=\small] at (axis cs:.5,0){$(1/2,0)$};
+\node[font=\small] at (axis cs:1.19,.37){可行域};
+\end{axis}
+\end{tikzpicture}
+\caption{参数空间中 $b=0$ 的可行域截面与目标函数等高线。绿色区域为可行域在绘图区内的部分，最小可达圆的半径为 $1/2$。}
+\label{fig:svm-parameter-space}
+\end{figure}
+
+\subsubsection{标准二次规划与 COPT 求解器}
+
+令 $\boldsymbol z=(\boldsymbol w^{\mathsf T},b)^{\mathsf T}\in\mathbb R^{d+1}$，样本矩阵 $X\in\mathbb R^{n\times d}$ 的第 $i$ 行为 $\boldsymbol x_i^{\mathsf T}$，记 $Y=\operatorname{diag}(y_1,\ldots,y_n)$、$\boldsymbol 1=(1,\ldots,1)^{\mathsf T}$。则
+\[
+P=\begin{pmatrix}I_d&0\\0&0\end{pmatrix},\qquad
+A=\begin{pmatrix}YX&\boldsymbol y\end{pmatrix},
+\qquad \boldsymbol y=Y\boldsymbol1.
+\]
+原始问题可以写成标准凸 QP：
+\[
+\boxed{\min_{\boldsymbol z}\ \frac12\boldsymbol z^{\mathsf T}P\boldsymbol z
+\quad\text{s.t.}\quad A\boldsymbol z\geq\boldsymbol1.}
+\]
+对于六个样本，
+\[
+P=\begin{pmatrix}1&0&0\\0&1&0\\0&0&0\end{pmatrix},
+\qquad A=\begin{pmatrix}
+2&0&-1\\3&2&-1\\4&-2&-1\\
+2&0&1\\3&-2&1\\4&2&1
+\end{pmatrix}.
+\]
+使用 COPT、Gurobi 等通用凸二次规划求解器时，应将三个变量均设为自由连续变量，而不是默认非负变量；目标函数的二次项只包含 $w_1,w_2$，不包含 $b$。求解后首先检查优化状态，再核验 $A\boldsymbol z\geq\boldsymbol1$、目标值及间隔。前面的精确解可以作为数值程序的验算基准。此处给出数学模型而非某个特定版本的 Python API，避免将求解器接口的细节与 SVM 的数学原理混淆。
+
+\subsection{拉格朗日对偶：为什么支持向量可以决定分类器}
+
+\subsubsection{从不等式约束到拉格朗日函数}
+
+对于最小化问题，采用 $g_i(\boldsymbol w,b)=1-y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)\leq0$ 的约定。为每个约束引入乘子 $\alpha_i\geq0$，构造
+\begin{equation}\label{eq:svm-lagrangian-expanded}
+L(\boldsymbol w,b,\boldsymbol\alpha)=
+\frac12\|\boldsymbol w\|_2^2+
+\sum_{i=1}^n\alpha_i[1-y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)].
+\end{equation}
+对任意原始可行点，$L$ 不超过原始目标值。因此
+$q(\boldsymbol\alpha)=\inf_{\boldsymbol w,b}L(\boldsymbol w,b,\boldsymbol\alpha)$
+给出原始最优值的下界。对偶优化的任务是寻找最好的下界：
+$\max_{\boldsymbol\alpha\geq0}q(\boldsymbol\alpha)$。
+
+分别对 $\boldsymbol w$ 与 $b$ 求导：
+\begin{align*}
+\nabla_{\boldsymbol w}L
+&=\boldsymbol w-\sum_i\alpha_i y_i\boldsymbol x_i,\\
+\frac{\partial L}{\partial b}&=-\sum_i\alpha_i y_i.
+\end{align*}
+令第一式为零，得到
+\begin{equation}\label{eq:svm-weight-expansion}
+\boxed{\boldsymbol w=\sum_i\alpha_i y_i\boldsymbol x_i.}
+\end{equation}
+若 $\sum_i\alpha_i y_i\ne0$，由于 $b$ 是自由变量，对 $b$ 取下确界为 $-\infty$；因此有限对偶值必须满足
+\begin{equation}\label{eq:svm-dual-balance}
+\sum_i\alpha_i y_i=0.
+\end{equation}
+将这两个关系代入拉格朗日函数：
+\begin{align*}
+q(\boldsymbol\alpha)
+&=\sum_i\alpha_i-\frac12\left\|\sum_i\alpha_i y_i\boldsymbol x_i\right\|^2\\
+&=\sum_i\alpha_i-\frac12\sum_i\sum_j
+\alpha_i\alpha_j y_i y_j\boldsymbol x_i^{\mathsf T}\boldsymbol x_j.
+\end{align*}
+定义 $Q_{ij}=y_i y_j\boldsymbol x_i^{\mathsf T}\boldsymbol x_j$，最终得到硬间隔对偶问题：
+\begin{equation}\label{eq:svm-hard-dual}
+\boxed{\begin{aligned}
+\max_{\boldsymbol\alpha}\quad&
+\boldsymbol1^{\mathsf T}\boldsymbol\alpha-\frac12\boldsymbol\alpha^{\mathsf T}Q\boldsymbol\alpha\\
+\text{s.t.}\quad&\boldsymbol y^{\mathsf T}\boldsymbol\alpha=0,\qquad \boldsymbol\alpha\geq0.
+\end{aligned}}
+\end{equation}
+注意 $Q=YXX^{\mathsf T}Y$，对任意 $\boldsymbol u\in\mathbb R^n$，
+\[
+\boldsymbol u^{\mathsf T}Q\boldsymbol u=\|X^{\mathsf T}Y\boldsymbol u\|^2\geq0.
+\]
+故 $Q$ 半正定；最大化凹二次函数等价于最小化其负函数，仍为凸二次规划。线性可分时可以将一个严格分离超平面的参数乘以充分大的正数，使每个约束严格成立，因此满足 Slater 条件，强对偶成立，原始最优值等于对偶最大值。
+
+\subsubsection{KKT 条件及支持向量的稀疏性}
+
+原始问题与对偶问题的最优解满足以下条件：
+\begin{equation}\label{eq:svm-hard-kkt}
+\begin{cases}
+\boldsymbol w=\sum_i\alpha_i y_i\boldsymbol x_i,\\
+\sum_i\alpha_i y_i=0,\\
+y_i f(\boldsymbol x_i)\geq1,\quad \alpha_i\geq0,\\
+\alpha_i[y_i f(\boldsymbol x_i)-1]=0.
+\end{cases}
+\end{equation}
+其中 $f(\boldsymbol x)=\boldsymbol w^{\mathsf T}\boldsymbol x+b$。最后一式称为互补松弛条件。它说明：
+\begin{itemize}
+\item 若 $y_i f(\boldsymbol x_i)>1$，则必有 $\alpha_i=0$；
+\item 若 $\alpha_i>0$，则必有 $y_i f(\boldsymbol x_i)=1$；
+\item 若 $y_i f(\boldsymbol x_i)=1$，乘子仍可能为零（退化情形）。
+\end{itemize}
+所以几何意义上位于间隔边界的点与对偶展开中乘子严格为正的点，需要在退化情况下加以区分。由式\eqref{eq:svm-weight-expansion}，
+\[
+f(\boldsymbol x)=\sum_{i:\alpha_i>0}\alpha_i y_i
+\boldsymbol x_i^{\mathsf T}\boldsymbol x+b.
+\]
+非零乘子对应的训练样本构成决策函数的展开。对任意 $\alpha_k>0$ 的硬间隔支持向量，
+\begin{equation}\label{eq:svm-b-recover}
+b=y_k-\sum_i\alpha_i y_i\boldsymbol x_i^{\mathsf T}\boldsymbol x_k.
+\end{equation}
+数值实现时可以对多个这样的样本计算所得偏置取平均。
+
+\subsubsection{六个样本的对偶手算与强对偶验证}
+
+前面已经证明原始最优解为 $(1/2,0,0)$。其函数间隔依次为
+$1,3/2,2,1,3/2,2$。根据 KKT 条件，$\alpha_B=\alpha_C=\alpha_E=\alpha_F=0$；再由平衡约束得到 $\alpha_A=\alpha_D=a\geq0$。于是
+\[
+\sum_i\alpha_i y_i\boldsymbol x_i=(4a,0)^{\mathsf T},
+\qquad q(a)=2a-8a^2.
+\]
+求导得 $q'(a)=2-16a$，$q''(a)=-16<0$，因此
+\[
+a^*=\frac18,\qquad q(a^*)=\frac18.
+\]
+得到 $\boldsymbol\alpha^*=(1/8,0,0,1/8,0,0)^{\mathsf T}$，
+再由式\eqref{eq:svm-weight-expansion}与式\eqref{eq:svm-b-recover}还原
+$\boldsymbol w^*=(1/2,0)^{\mathsf T},b^*=0$。原始目标值与对偶目标值均为 $1/8$，且全部 KKT 条件满足，这是独立的最优性证书。这里利用已知原始解简化了对偶手算；一般训练时并不预先知道哪些乘子为零。
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}
+\begin{axis}[width=.48\textwidth,height=5.5cm,xmin=0,xmax=.26,ymin=-.03,ymax=.15,
+xlabel={$a$},ylabel={$q(a)$},grid=major,grid style={draw=gray!15}]
+\addplot[accent,very thick,domain=0:.26,samples=100]{2*x-8*x^2};
+\addplot[dashed,red!65!black] coordinates {(.125,0) (.125,.125)};
+\addplot[only marks,mark=*,red!65!black] coordinates {(.125,.125)};
+\node[anchor=south,font=\scriptsize] at (axis cs:.125,.125){$(1/8,1/8)$};
+\end{axis}
+\end{tikzpicture}\hfill
+\begin{tikzpicture}
+\begin{axis}[width=.48\textwidth,height=5.5cm,ybar,bar width=9pt,
+symbolic x coords={A,B,C,D,E,F},xtick=data,ymin=0,ymax=.15,ylabel={$\alpha_i^*$},
+nodes near coords,point meta=y,grid=major,grid style={draw=gray!15}]
+\addplot[fill=accent!65,draw=accent] coordinates {(A,.125) (B,0) (C,0) (D,.125) (E,0) (F,0)};
+\end{axis}
+\end{tikzpicture}
+\caption{左图为精确对偶目标函数；右图为全部训练样本的最优对偶乘子。A、D 的乘子非零。}
+\label{fig:svm-dual-example}
+\end{figure}
+
+\subsection{软间隔 SVM：噪声、异常点与正则化}
+
+\subsubsection{松弛变量与软间隔优化模型}
+
+现实数据可能由于测量误差、标签错误或类别分布重叠而无法线性分离。硬间隔问题此时不可行。为每个样本引入非负松弛变量 $\xi_i$，将约束放宽为
+\[
+y_i f(\boldsymbol x_i)\geq1-\xi_i,\qquad \xi_i\geq0.
+\]
+如果不惩罚松弛变量，优化可以任意违反间隔，因此在目标函数中增加线性惩罚：
+\begin{equation}\label{eq:svm-soft-primal}
+\boxed{\begin{aligned}
+\min_{\boldsymbol w,b,\boldsymbol\xi}\quad&
+\frac12\|\boldsymbol w\|^2+C\sum_i\xi_i\\
+\text{s.t.}\quad&y_i f(\boldsymbol x_i)\geq1-\xi_i,\qquad \xi_i\geq0.
+\end{aligned}}
+\end{equation}
+其中 $C>0$ 为惩罚参数。目标仍是凸二次函数，约束仍是线性约束。软间隔总是存在严格可行点，例如取 $\boldsymbol w=0,b=0,\xi_i=2$。
+
+对于固定的 $\boldsymbol w,b$，因 $C>0$，最优松弛变量必为
+$\xi_i=\max\{0,1-y_if(\boldsymbol x_i)\}$。据此可解释样本状态：
+\begin{center}
+\begin{tabular}{lll}\toprule
+最优 $\xi_i$ & 函数间隔 $t_i=y_if(\boldsymbol x_i)$ & 样本状态\\\midrule
+$0$ & $t_i\geq1$ & 正确分类，满足间隔\\
+$(0,1)$ & $0<t_i<1$ & 正确分类，进入间隔带\\
+$1$ & $t_i=0$ & 位于决策边界\\
+$>1$ & $t_i<0$ & 错误分类\\\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[x=2.3cm,y=.65cm]
+\fill[accent!8] (-1,-.3) rectangle (1,5.4);
+\draw[dashed,accent] (-1,-.3)--(-1,5.4) node[above]{$f=-1$};
+\draw[very thick] (0,-.3)--(0,5.4) node[above]{$f=0$};
+\draw[dashed,red!65!black] (1,-.3)--(1,5.4) node[above]{$f=1$};
+\foreach \xx/\yy/\lab in {1.35/4.5/0,1/3.5/0,.5/2.5/0.5,0/1.5/1,-.5/.5/1.5}{
+\fill[red!65!black] (\xx,\yy) circle (2pt);
+\node[anchor=west,font=\small] at (\xx+.08,\yy){$\xi=\lab$};
+}
+\draw[->] (-1.7,-.3)--(2,-.3) node[right]{$f$};
+\end{tikzpicture}
+\caption{真实标签均为 $+1$ 的五个示意点；横轴直接使用判别得分 $f$，松弛变量精确等于 $\max(0,1-f)$。}
+\label{fig:svm-slack}
+\end{figure}
+
+\subsubsection{合页损失与统计学习解释}
+
+消去松弛变量，得到等价的无约束优化问题：
+\begin{equation}\label{eq:svm-hinge-objective}
+\boxed{\min_{\boldsymbol w,b}\ 
+\frac12\|\boldsymbol w\|^2+C\sum_{i=1}^n
+\underbrace{\max(0,1-y_i f(\boldsymbol x_i))}_{\text{合页损失}}.}
+\end{equation}
+合页损失（hinge loss）是零一分类损失的凸上界。令 $t=yf(\boldsymbol x)$，则
+\[
+\ell(t)=\begin{cases}1-t,&t<1,\\0,&t\geq1.\end{cases}
+\]
+当 $t>1$ 时，样本已经充分满足间隔，继续增加得分不会降低损失；当 $t<1$ 时，损失以斜率 $-1$ 随间隔增加而降低。$t=1$ 处不可微，其次梯度集合为 $[-1,0]$。
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}
+\begin{axis}[width=.78\textwidth,height=6cm,xmin=-3,xmax=3,ymin=0,ymax=4.2,
+xlabel={$t=yf(\boldsymbol x)$},ylabel={损失},grid=major,grid style={draw=gray!15},legend pos=north east]
+\addplot[accent,very thick] coordinates {(-3,4) (1,0) (3,0)};
+\addlegendentry{合页损失}
+\addplot[red!65!black,thick,domain=-3:3,samples=120]{ln(1+exp(-x))};
+\addlegendentry{对数损失}
+\addplot[black!60,dashed,thick] coordinates {(-3,1) (0,1)};
+\addplot[black!60,dashed,thick,forget plot] coordinates {(0,0) (3,0)};
+\addlegendentry{零一损失}
+\addplot[only marks,mark=o,black!60,forget plot] coordinates {(0,0)};
+\addplot[only marks,mark=*,black!60,forget plot] coordinates {(0,1)};
+\end{axis}
+\end{tikzpicture}
+\caption{合页损失、逻辑回归对数损失与零一损失（将 $t=0$ 计为错误）的函数对照。}
+\label{fig:svm-losses}
+\end{figure}
+
+将式\eqref{eq:svm-hinge-objective}除以正常数 $Cn$，可写为正则化经验风险形式：
+\[
+\min_{\boldsymbol w,b}\quad
+\frac{\lambda}{2}\|\boldsymbol w\|^2+
+\frac1n\sum_i\ell(y_if(\boldsymbol x_i)),
+\qquad \lambda=\frac1{Cn}.
+\]
+较大的 $C$ 更重视训练损失，较小的 $C$ 更重视正则化。$C$ 不是错误样本个数的上限，也不是越大越好。应在训练数据内部用交叉验证选择，测试集仅用于最终评价。
+
+\subsubsection{一个可以精确手算的惩罚参数例子}
+
+取一维数据 $(-1,-1)$、$(1,+1)$。由于对称性及凸性，可以选择 $b=0$ 的最优解，原始目标变为
+\[
+J(w)=\frac12w^2+2C\max(0,1-w).
+\]
+当 $w<1$ 时，$J'(w)=w-2C$；当 $w>1$ 时，$J'(w)=w$。
+结合 $w=1$ 的次梯度条件，得到
+\[
+\boxed{w^*(C)=\min(2C,1),\qquad \xi_1^*=\xi_2^*=\max(0,1-2C).}
+\]
+所以 $C<1/2$ 时，两个样本虽然都能正确分类，却允许间隔不足以换取更小的权重；$C\geq1/2$ 时恢复硬间隔解。这个例子中的决策边界始终是 $x=0$，但函数间隔和间隔带宽度发生变化。因此不能简单地认为改变 $C$ 一定会移动分类边界。
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}
+\begin{axis}[width=.76\textwidth,height=5.8cm,xmin=0,xmax=1.25,ymin=0,ymax=1.1,
+xlabel={$C$},ylabel={最优参数},grid=major,grid style={draw=gray!15},legend pos=east]
+\addplot[accent,very thick] coordinates {(0,0) (.5,1) (1.25,1)};
+\addlegendentry{$w^*(C)$}
+\addplot[red!65!black,very thick,dashed] coordinates {(0,1) (.5,0) (1.25,0)};
+\addlegendentry{$\xi_i^*(C)$}
+\end{axis}
+\end{tikzpicture}
+\caption{两样本对称软间隔问题的精确参数路径，$C=0$ 处仅表示右极限。}
+\label{fig:svm-c-path}
+\end{figure}
+
+\subsubsection{软间隔对偶与三种乘子状态}
+
+对约束 $1-\xi_i-y_if(\boldsymbol x_i)\leq0$ 与 $-\xi_i\leq0$ 分别引入乘子 $\alpha_i,\mu_i\geq0$：
+\[
+L=\frac12\|\boldsymbol w\|^2+C\sum_i\xi_i
++\sum_i\alpha_i(1-\xi_i-y_if(\boldsymbol x_i))
+-\sum_i\mu_i\xi_i.
+\]
+关于 $\boldsymbol w,b$ 的驻点条件与硬间隔相同；关于 $\xi_i$ 的驻点条件为
+$C-\alpha_i-\mu_i=0$，因此 $0\leq\alpha_i\leq C$。消去原始变量后，
+\begin{equation}\label{eq:svm-soft-dual}
+\boxed{\begin{aligned}
+\max_{\boldsymbol\alpha}\quad&
+\boldsymbol1^{\mathsf T}\boldsymbol\alpha-\frac12\boldsymbol\alpha^{\mathsf T}Q\boldsymbol\alpha\\
+\text{s.t.}\quad&\boldsymbol y^{\mathsf T}\boldsymbol\alpha=0,\qquad 0\leq\alpha_i\leq C.
+\end{aligned}}
+\end{equation}
+互补松弛条件为
+\[
+\alpha_i(1-\xi_i-y_if(\boldsymbol x_i))=0,\qquad (C-\alpha_i)\xi_i=0.
+\]
+由此得到三个重要状态：
+\[
+\begin{array}{c|c}
+\alpha_i=0 & y_if(\boldsymbol x_i)\geq1\\
+0<\alpha_i<C & y_if(\boldsymbol x_i)=1\\
+\alpha_i=C & y_if(\boldsymbol x_i)\leq1
+\end{array}
+\]
+注意第三种状态不一定表示错误分类，也可能恰好在间隔边界上。对于 $0<\alpha_i<C$ 的样本，可以直接用式\eqref{eq:svm-b-recover}计算 $b$；若不存在这样的自由支持向量，则应使用 KKT 不等式确定偏置的可行区间。
+
+\subsection{计算机如何求解：SMO 与次梯度方法}
+
+\subsubsection{SMO 为什么每次更新两个乘子}
+
+序列最小最优化算法（Sequential Minimal Optimization，SMO）针对对偶问题的特殊结构进行分解\cite[第7章]{lihang2019}。如果其余变量固定，只改变一个乘子就会破坏 $\boldsymbol y^{\mathsf T}\boldsymbol\alpha=0$。因此每次选两个变量 $\alpha_i,\alpha_j$，使
+\[
+y_i\alpha_i+y_j\alpha_j=s
+\]
+在更新前后保持不变。令 $d=\alpha_j^{new}-\alpha_j^{old}$，则
+\[
+\alpha_i^{new}=\alpha_i^{old}-y_i y_jd.
+\]
+软间隔的盒约束 $0\leq\alpha_i,\alpha_j\leq C$ 给出 $\alpha_j^{new}$ 的可行区间 $[L,H]$：
+\[
+(L,H)=
+\begin{cases}
+(\max(0,\alpha_j-\alpha_i),\,\min(C,C+\alpha_j-\alpha_i)),&y_i\ne y_j,\\
+(\max(0,\alpha_i+\alpha_j-C),\,\min(C,\alpha_i+\alpha_j)),&y_i=y_j.
+\end{cases}
+\]
+公式右端使用更新前的乘子。
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[x=4.2cm,y=4.2cm]
+\fill[accent!8] (0,0) rectangle (1,1);
+\draw[->] (0,0)--(1.2,0) node[right]{$\alpha_i$};
+\draw[->] (0,0)--(0,1.2) node[above]{$\alpha_j$};
+\draw[dashed] (0,1) node[left]{$C$}--(1,1)--(1,0) node[below]{$C$};
+\draw[accent,very thick] (0,0)--(1,1);
+\fill[accent] (.2,.2) circle (2pt) node[right,font=\small]{旧点};
+\fill[red!65!black] (.65,.65) circle (2.5pt) node[right,font=\small]{子问题最优点};
+\draw[->,thick,red!65!black] (.26,.26)--(.59,.59);
+\node[anchor=south east,font=\small] at (.82,.82){$\alpha_i=\alpha_j$};
+\end{tikzpicture}
+\caption{异类样本且 $s=0$ 时，SMO 在盒约束内沿可行线段联合更新两个乘子。图示的是子问题几何结构，而非某个真实迭代轨迹。}
+\label{fig:svm-smo}
+\end{figure}
+
+\subsubsection{推导一元二次子问题并更新偏置}
+
+记 $K_{ij}=\boldsymbol x_i^{\mathsf T}\boldsymbol x_j$（核 SVM 中改用核函数），当前预测误差为 $E_i=f(\boldsymbol x_i)-y_i$。将两个乘子的变化代入对偶的最小化形式，整理得与常数无关的子目标：
+\[
+\psi(d)=\frac12\eta d^2-y_j(E_i-E_j)d,\qquad
+\eta=K_{ii}+K_{jj}-2K_{ij}.
+\]
+其中 $\eta=\|\phi(\boldsymbol x_i)-\phi(\boldsymbol x_j)\|^2\geq0$。当 $\eta>0$ 时，令 $\psi'(d)=0$，可得到无约束更新
+\[
+\widetilde\alpha_j=\alpha_j^{old}+\frac{y_j(E_i-E_j)}{\eta}.
+\]
+然后投影到可行区间：
+\[
+\alpha_j^{new}=\min\{H,\max\{L,\widetilde\alpha_j\}\},\qquad
+\alpha_i^{new}=\alpha_i^{old}+y_i y_j(\alpha_j^{old}-\alpha_j^{new}).
+\]
+若 $\eta=0$，子目标是线性的或常数，应比较区间端点的目标值；若 $L=H$，则无法更新这一对乘子。
+
+记 $\Delta_i=\alpha_i^{new}-\alpha_i^{old}$、$\Delta_j=\alpha_j^{new}-\alpha_j^{old}$。由自由支持向量需要满足 $y_kf(\boldsymbol x_k)=1$，得到两个偏置候选值
+\begin{align*}
+b_i&=b^{old}-E_i-y_i\Delta_iK_{ii}-y_j\Delta_jK_{ij},\\
+b_j&=b^{old}-E_j-y_i\Delta_iK_{ij}-y_j\Delta_jK_{jj}.
+\end{align*}
+若更新后 $0<\alpha_i<C$，可选 $b_i$；否则若 $0<\alpha_j<C$，选 $b_j$；两者均不自由时，标准 SMO 更新可取两候选值的中点。最终仍须核验全局 KKT 条件。
+
+\subsubsection{一次实际的 SMO 手算}
+
+沿用 A、D 两点，取 $C=1$，初始所有乘子和 $b$ 均为零。选择 $i=A,j=D$，则 $E_A=1,E_D=-1$，且
+\[
+K_{AA}=4,\quad K_{DD}=4,\quad K_{AD}=-4,\quad \eta=16.
+\]
+可行区间为 $[0,1]$，于是
+\[
+\widetilde\alpha_D=0+\frac{(+1)(1-(-1))}{16}=\frac18,\quad
+\alpha_A^{new}=\alpha_D^{new}=\frac18.
+\]
+两个偏置候选值均为零，故 $b^{new}=0$。由于更新后其余四点函数间隔均大于 $1$，全部 KKT 条件满足，在这个特别构造的例子里一次有效更新就达到了全局最优。一般数据并不具备这一性质。
+
+完整训练的基本流程为：初始化可行乘子，寻找违反 KKT 条件的样本，选择第二个变量，求解上述一元二次子问题，更新偏置与误差缓存，再重复检查。选择变量的启发式策略、缓存管理和终止容差是高效实现的重要组成部分；停止不应仅以某一次更新很小为依据。
+
+\subsubsection{直接优化线性 SVM 的次梯度}
+
+对式\eqref{eq:svm-hinge-objective}，令 $I=\{i:y_if(\boldsymbol x_i)<1\}$。在恰好位于折点的样本取零次梯度时，一组合法次梯度为
+\[
+\boldsymbol g_w=\boldsymbol w-C\sum_{i\in I}y_i\boldsymbol x_i,\qquad
+g_b=-C\sum_{i\in I}y_i.
+\]
+因此可执行
+\[
+\boldsymbol w^{(k+1)}=\boldsymbol w^{(k)}-\rho_k\boldsymbol g_w,
+\qquad b^{(k+1)}=b^{(k)}-\rho_kg_b,
+\]
+其中 $\rho_k>0$ 是步长。合页损失并不处处可微，不能直接套用光滑梯度下降的全部收敛结论。适当的递减步长、次梯度有界性及其他标准条件可以支持相应收敛分析。大规模线性任务常考虑原始形式、随机次梯度或坐标下降；核 SVM 常考虑对偶分解算法。通用 QP 求解器则适合作为数学模型验证或中小规模问题的基准。
+
+\subsection{核技巧：从线性超平面到非线性分类边界}
+
+\subsubsection{为什么特征映射能够改变线性可分性}
+
+考虑内外两圈数据。令内圈半径为 $1$，标签为 $-1$；外圈半径为 $2$，标签为 $+1$，每圈在四个坐标轴方向上取点。这两类样本的凸包均包含原点，因此不存在严格分离它们的二维直线。构造映射
+\[
+\phi(\boldsymbol x)=(x_1,x_2,x_1^2+x_2^2)^{\mathsf T}.
+\]
+内圈在三维空间的第三坐标为 $1$，外圈为 $4$，可用平面 $z=5/2$ 分离。映射回原始空间便得到圆形边界
+$x_1^2+x_2^2=5/2$。
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}
+\begin{axis}[width=.47\textwidth,height=5.8cm,axis equal image,xmin=-2.4,xmax=2.4,ymin=-2.4,ymax=2.4,
+xlabel={$x_1$},ylabel={$x_2$},axis lines=middle,grid=major,grid style={draw=gray!15}]
+\addplot[green!45!black,thick,dashed,domain=0:360,samples=100] ({sqrt(2.5)*cos(x)},{sqrt(2.5)*sin(x)});
+\addplot[only marks,mark=*,accent,mark size=3pt] coordinates {(1,0) (0,1) (-1,0) (0,-1)};
+\addplot[only marks,mark=square*,red!65!black,mark size=3pt] coordinates {(2,0) (0,2) (-2,0) (0,-2)};
+\end{axis}
+\end{tikzpicture}\hfill
+\begin{tikzpicture}
+\begin{axis}[width=.49\textwidth,height=6cm,view={125}{25},xmin=-2.2,xmax=2.2,ymin=-2.2,ymax=2.2,zmin=0,zmax=4.8,
+xlabel={$x_1$},ylabel={$x_2$},zlabel={$z$},grid=major,grid style={draw=gray!15}]
+\addplot3[surf,shader=flat,opacity=.2,draw=none,fill=green!45!black,domain=-2.1:2.1,y domain=-2.1:2.1,samples=5] {2.5};
+\addplot3[only marks,mark=*,accent,mark size=3pt] coordinates {(1,0,1) (0,1,1) (-1,0,1) (0,-1,1)};
+\addplot3[only marks,mark=square*,red!65!black,mark size=3pt] coordinates {(2,0,4) (0,2,4) (-2,0,4) (0,-2,4)};
+\end{axis}
+\end{tikzpicture}
+\caption{同心样本在原始二维空间中的圆形分割边界与映射后三维空间的水平分割平面，坐标来自同一组构造数据。}
+\label{fig:svm-feature-map}
+\end{figure}
+
+\subsubsection{核函数为何不需要显式升维}
+
+将原始空间的内积替换为特征空间内积：
+\[
+K(\boldsymbol x,\boldsymbol z)=\langle\phi(\boldsymbol x),\phi(\boldsymbol z)\rangle.
+\]
+对偶问题中数据只通过内积出现，因此不需要显式存储高维 $\phi$。例如二维二次齐次多项式核
+\[
+K(\boldsymbol x,\boldsymbol z)=(\boldsymbol x^{\mathsf T}\boldsymbol z)^2
+\]
+展开为
+\[
+x_1^2z_1^2+2x_1x_2z_1z_2+x_2^2z_2^2
+=\begin{pmatrix}x_1^2\\\sqrt2x_1x_2\\x_2^2\end{pmatrix}^{\mathsf T}
+\begin{pmatrix}z_1^2\\\sqrt2z_1z_2\\z_2^2\end{pmatrix}.
+\]
+故这个核对应的特征映射为 $(x_1^2,\sqrt2x_1x_2,x_2^2)^{\mathsf T}$，与前一节用于几何解释的映射不同。若显式计算高维特征十分昂贵，直接计算核函数就可能更方便。合法的实对称核应对任意有限样本产生半正定 Gram 矩阵，这是保证标准核 SVM 对偶问题凸性的关键条件。
+
+常见核函数为
+\begin{align*}
+K_{\mathrm{linear}}(\boldsymbol x,\boldsymbol z)&=\boldsymbol x^{\mathsf T}\boldsymbol z,\\
+K_{\mathrm{poly}}(\boldsymbol x,\boldsymbol z)&=(\gamma\boldsymbol x^{\mathsf T}\boldsymbol z+r)^p,\\
+K_{\mathrm{RBF}}(\boldsymbol x,\boldsymbol z)&=\exp(-\gamma\|\boldsymbol x-\boldsymbol z\|^2).
+\end{align*}
+其中多项式核可取 $\gamma>0,r\geq0,p$ 为正整数，高斯核取 $\gamma>0$。对于高斯核，若两点相距 $s$，相似度为 $\exp(-\gamma s^2)$；$\gamma$ 越大，相似度随距离衰减越快，分类边界可能更加局部化。它与前文表示几何间隔的 $\gamma$ 是不同用途的参数。
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}
+\begin{axis}[width=.76\textwidth,height=5.7cm,xmin=0,xmax=4,ymin=0,ymax=1.05,
+xlabel={距离 $s=\|\boldsymbol x-\boldsymbol z\|$},ylabel={$K_{\mathrm{RBF}}$},grid=major,grid style={draw=gray!15},legend pos=north east]
+\addplot[accent,very thick,domain=0:4,samples=100]{exp(-.2*x^2)};
+\addlegendentry{$\gamma=0.2$}
+\addplot[orange!85!black,thick,dashed,domain=0:4,samples=100]{exp(-x^2)};
+\addlegendentry{$\gamma=1$}
+\addplot[red!65!black,thick,densely dotted,domain=0:4,samples=100]{exp(-5*x^2)};
+\addlegendentry{$\gamma=5$}
+\end{axis}
+\end{tikzpicture}
+\caption{不同高斯核参数下相似度随距离的精确变化。}
+\label{fig:svm-rbf-width}
+\end{figure}
+
+\subsubsection{核 SVM 的完整求解模型}
+
+构造 $K_{ij}=K(\boldsymbol x_i,\boldsymbol x_j)$，令 $Q_{ij}=y_i y_jK_{ij}$。软间隔核 SVM 的训练问题仍为
+\[
+\boxed{\begin{aligned}
+\max_{\boldsymbol\alpha}\quad&
+\sum_i\alpha_i-\frac12\sum_{i,j}\alpha_i\alpha_j y_i y_jK_{ij}\\
+\text{s.t.}\quad&\sum_i\alpha_i y_i=0,\qquad 0\leq\alpha_i\leq C.
+\end{aligned}}
+\]
+与线性 SVM 相比，优化变量和约束均未改变，仅替换了二次项中的内积。求得乘子后，预测函数为
+\begin{equation}\label{eq:svm-kernel-decision}
+\boxed{\hat y=\operatorname{sign}\left(\sum_{i:\alpha_i>0}\alpha_i y_i
+K(\boldsymbol x_i,\boldsymbol x)+b\right).}
+\end{equation}
+偏置可用自由支持向量 $k$ 的等式
+$b=y_k-\sum_i\alpha_i y_iK(\boldsymbol x_i,\boldsymbol x_k)$ 恢复。如果没有自由支持向量，按 KKT 不等式确定偏置。对于稠密核矩阵，直接保存全部元素需要 $O(n^2)$ 空间，因此核技巧并不意味着所有大样本问题都能高效解决。
+
+\subsubsection{非线性核 SVM 的精确手算：同心样本}
+
+对图\ref{fig:svm-feature-map}的八个样本，选用二次齐次多项式核，并取每个样本相同的乘子 $a$。正负样本数量相等，故平衡约束自动满足。对应特征映射下，
+\[
+\sum_i\alpha_i y_i\phi(\boldsymbol x_i)=(6a,0,6a)^{\mathsf T}.
+\]
+这是因为内圈在第一、第三坐标的特征和分别为 $2,2$，外圈分别为 $8,8$。对偶目标化为
+\[
+q(a)=8a-36a^2.
+\]
+故 $a^*=1/9$。对于软间隔取 $C>1/9$，所有乘子均在上下界之间。此时
+\[
+\boldsymbol w_\phi=(2/3,0,2/3)^{\mathsf T},\qquad
+b=-1-\frac23=-\frac53.
+\]
+最终判别函数为
+\[
+f(\boldsymbol x)=\frac23(x_1^2+x_2^2)-\frac53.
+\]
+内圈得分 $-1$，外圈得分 $+1$，全部松弛变量为零，KKT 条件逐项成立，故该构造给出全局最优解，而不只是一个对称性猜测。原始目标值为 $4/9$，对偶目标值同为 $4/9$。决策边界恰好是 $x_1^2+x_2^2=5/2$。在原始二维空间中这是一条曲线，在核对应的特征空间中却仍是线性超平面。
+
+\subsection{统计学习视角、实践规范与扩展小结}
+
+线性 SVM 与逻辑回归可共享得分函数 $f(\boldsymbol x)=\boldsymbol w^{\mathsf T}\boldsymbol x+b$，但前者使用合页损失与间隔正则化，后者使用对数损失 $\ln(1+\exp(-yf(\boldsymbol x)))$，通常可从 Bernoulli 条件概率模型的最大似然出发推导。两种损失的图形对照见图\ref{fig:svm-losses}。逻辑回归的预测可直接解释为模型估计的条件概率；标准 SVM 的得分不是概率，如需概率输出应另行校准。
+
+\begin{center}
+\begin{tabularx}{\textwidth}{lXX}\toprule
+比较项&逻辑回归&支持向量机\\\midrule
+学习思想&条件概率建模&最大间隔与正则化经验风险\\
+损失函数&对数损失，处处光滑&合页损失，折点不可微\\
+训练过程&梯度法、牛顿法等&凸 QP、SMO、坐标下降等\\
+原始输出&条件概率估计&带符号的判别得分\\
+非线性推广&构造非线性特征等&特征映射与核技巧\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+实践中应先划分训练集与测试集，仅用训练数据拟合标准化参数；再通过交叉验证选择 $C$ 与核参数。特征缩放会改变欧氏距离及正则化的含义，尤其影响 RBF 核。类别不平衡时，应根据实际代价选用适当的评价指标和类别权重，不能仅看训练准确率。模型训练的全局最优性是针对给定数据和目标函数的结论，并不意味着泛化误差最小。
+
+\paragraph{思考与手算练习。}
+\begin{enumerate}
+\item 将原六个样本沿 $x_1$ 方向全部平移 $3$ 个单位，证明最优权重不变并求新的偏置与决策边界。
+\item 从式\eqref{eq:svm-soft-primal}独立推导软间隔对偶，并解释为何 $\alpha_i=C$ 不等价于分类错误。
+\item 重新手算两样本软间隔问题在 $C=1/4$ 时的最优权重、松弛变量与目标值。
+\item 对二维异或数据 $(1,1),(-1,-1)$ 为正类，$(1,-1),(-1,1)$ 为负类，尝试利用二次多项式核构造线性特征空间中的分类器。
+\item 比较原始问题和对偶问题的变量规模，讨论 $n\gg d$ 与 $d\gg n$ 时应如何选择数值算法。
+\end{enumerate}
+前两题分别检验几何间隔不变性与对偶推导；第三、四题分别检验惩罚参数与非线性特征映射的理解；最后一题联系计算复杂度与实际优化工具。建议结合《统计学习方法》第7章、《机器学习》第6章以及 ISLP 第9章继续阅读\cite{lihang2019,zhou2016,james2023}。
+
+\paragraph{参考答案要点。}
+第一题 $b^*=-3/2$，边界为 $x_1=3$，平移不改变欧氏间隔。第三题 $w^*=1/2$，可取 $b=0$，两松弛变量均为 $1/2$，目标值为 $1/8+1/4=3/8$。第四题使用特征 $\sqrt2x_1x_2$，取其权重 $1/\sqrt2$、其余权重为零且 $b=0$，得到 $f(\boldsymbol x)=x_1x_2$；四点均满足单位函数间隔。
+
+\subsection{扩展内容总结}
+
+支持向量机的完整逻辑可以概括为：
+\[
+\begin{gathered}
+\text{分类超平面}\ \longrightarrow\ \text{几何间隔}\ \longrightarrow\ \text{凸二次规划}\\
+\longrightarrow\ \text{拉格朗日对偶与 KKT 条件}\ \longrightarrow\ \text{支持向量展开}\\
+\longrightarrow\ \text{软间隔与合页损失}\ \longrightarrow\ \text{核技巧与非线性分类}.
+\end{gathered}
+学习时应特别区分样本空间和参数空间、函数间隔和几何间隔、原始变量和对偶变量、间隔违反和分类错误。对线性模型而言，COPT 等通用求解器可以直接求解凸二次规划；对核模型而言，SMO 等专门算法利用了对偶问题的盒约束和单个平衡等式。无论选择何种求解方式，都应核验可行性、最优性和实际泛化性能，而不是仅依靠算法名称或训练准确率判断结果。
