@@ -1,5 +1,4 @@
-# 机器学习：从直观例子到公式推导
-
+# 机器学习
 本仓库为中文机器学习学习笔记，正文采用“问题背景—概念与原理—数学模型—关键推导—算例与适用条件”的结构，涵盖十个机器学习主题，配有数学示意图与基础数值实验。
 
 阅读入口：[main.pdf](main.pdf)（构建产物可能暂时落后于源码）；主文件：[main.tex](main.tex)；版式：[config/preamble.tex](config/preamble.tex)；参考文献：[references.bib](references.bib)。
@@ -32,5 +31,3 @@ code/ 包含配套 Python 数值实验，requirements.txt 列出实验依赖。
     latexmk -xelatex -interaction=nonstopmode -file-line-error main.tex
 
 .github/workflows/latex.yml 会在 main 分支对应源文件更新时运行原有七个 Python 数值检查、使用 XeLaTeX 构建文档、上传 PDF，并在满足既有条件时尝试更新 main.pdf。
-
-所有教学数据均为构造例子；训练目标的最优值与泛化能力是不同概念。
