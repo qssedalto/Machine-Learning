@@ -12,7 +12,7 @@
 
 假设输入和输出之间近似满足
 \begin{equation}\label{eq:simple-lm}
-\boxed{\hat y_i=wx_i+b.}
+\hat y_i=wx_i+b.
 \end{equation}
 $x_i$ 是第 $i$ 个输入，$y_i$ 是真实结果，$\hat y_i$ 是预测结果；$w$ 是斜率（权重），$b$ 是截距（偏置）。输入和真实结果属于数据，\textbf{$w,b$ 才是需要由训练确定的参数}。
 
@@ -30,7 +30,7 @@ e_i=y_i-\hat y_i=y_i-(wx_i+b).
 \end{equation}
 将 RSS 除以样本数 $n$，就是\textbf{均方误差}：
 \begin{equation}\label{eq:linear-mse}
-\boxed{\operatorname{MSE}(w,b)=\frac1n\sum_{i=1}^{n}(wx_i+b-y_i)^2.}
+\operatorname{MSE}(w,b)=\frac1n\sum_{i=1}^{n}(wx_i+b-y_i)^2.
 \end{equation}
 最小二乘法要求找到使 RSS（等价地，使 MSE）最小的参数。
 
@@ -38,7 +38,7 @@ e_i=y_i-\hat y_i=y_i-(wx_i+b).
 
 为了计算方便，训练时还常写
 \begin{equation}\label{eq:linear-objective}
-\boxed{J(w,b)=\frac1{2n}\sum_{i=1}^{n}(wx_i+b-y_i)^2.}
+J(w,b)=\frac1{2n}\sum_{i=1}^{n}(wx_i+b-y_i)^2.
 \end{equation}
 它和 MSE 相比多乘了 $1/2$：$\operatorname{MSE}=2J$。\textbf{数值不同，但取得最小值的参数完全相同。}系数 $1/2$ 用于抵消平方求导产生的系数 $2$，不能把 $J$ 的数值直接称为 MSE。
 
@@ -48,7 +48,7 @@ e_i=y_i-\hat y_i=y_i-(wx_i+b).
 \]
 这就是一个二元函数的极小化问题。
 
-\subsection{最小二乘估计：截距}
+\subsection{截距参数的最小二乘估计}
 
 截距控制直线整体的纵向位置。当斜率固定时，如果模型普遍高估真实结果，就可以降低截距；如果普遍低估，则应提高截距。最优截距条件的意义正是消除训练样本的整体预测偏移。含截距的普通最小二乘残差之和为零，并不意味着每个残差都为零。
 
@@ -65,11 +65,11 @@ e_i=y_i-\hat y_i=y_i-(wx_i+b).
 \]
 分别是输入、输出的样本均值。所以
 \begin{equation}\label{eq:intercept-ls}
-\boxed{b=\bar y-w\bar x.}
+b=\bar y-w\bar x.
 \end{equation}
 得到：\textbf{带截距项的普通最小二乘直线经过均值点 $(\bar x,\bar y)$}。
 
-\subsection{最小二乘估计：斜率}
+\subsection{斜率参数的最小二乘估计}
 
 斜率公式反映了两个变量共同变化的程度，而不仅是一个求导结果。其分子描述特征与响应相对各自均值的共同偏离，分母描述特征自身的变异。采用相同归一化约定时，斜率可以理解为样本协方差与特征样本方差之比。如果特征几乎没有变化，数据便很难提供充分的信息来确定斜率，微小的观测扰动也可能造成明显的系数变化。
 

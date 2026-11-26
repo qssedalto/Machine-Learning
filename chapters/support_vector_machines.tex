@@ -1,6 +1,6 @@
 \section{支持向量机与最大间隔分类}\label{ch:svm}
 
-\subsection{为什么分类正确还不够}
+\subsection{最大间隔分类的建模动机}
 
 分类正确只是一项离散判断，无法区分几乎贴着样本的边界与为两类保留较大距离的边界。假如观测受到轻微扰动，前一种边界附近的样本可能立即改变预测类别，后一种边界则有机会保持原预测。最大间隔原则正是对此类几何稳定性的数学刻画，但并不保证对任意分布变化都拥有最优泛化性能。
 
@@ -14,8 +14,8 @@
 
 给定 $d$ 维输入向量 $\boldsymbol x\in\mathbb R^d$，线性分类超平面写作
 \begin{equation}\label{eq:svm-hyperplane}
-\boxed{\boldsymbol w^{\mathsf T}\boldsymbol x+b=0,\qquad
-\boldsymbol w\ne\boldsymbol0.}
+\boldsymbol w^{\mathsf T}\boldsymbol x+b=0,\qquad
+\boldsymbol w\ne\boldsymbol0.
 \end{equation}
 $\boldsymbol w$ 是超平面的法向量，$b$ 是偏置；在二维空间这是一条直线，在三维空间对应一个平面。设样本标签 $y_i\in\{-1,+1\}$，分类器根据
 \[
@@ -29,7 +29,7 @@ y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)>0.
 \end{equation}
 但式\eqref{eq:svm-correct}只保证分类方向正确，没有量化样本到边界有多远。
 
-\subsection{推导点到超平面的距离}
+\subsection{点到超平面距离的推导}
 
 设样本 $\boldsymbol x_i$ 到超平面的正交投影为 $\boldsymbol p_i$。因为 $\boldsymbol w$ 是法向量，投影点可以写成
 \[
@@ -52,9 +52,9 @@ d_i
 \end{align}
 这样就把直观的“离直线多远”转换成了可计算的向量公式。
 
-\subsection{函数间隔与几何间隔有什么不同}
+\subsection{函数间隔与几何间隔}
 
-函数间隔是经过标签方向调整的分类得分，几何间隔是进一步经过法向量长度校正的有符号距离。正确分类的样本具有正间隔，错误分类的样本具有负间隔，位于决策面的样本间隔为零。这一尺度把两类观测统一起来，使我们能够判断哪些点更容易因边界或样本扰动而改变分类。
+函数间隔是经过标签方向调整的分类得分，几何间隔是进一步经过法向量长度校正的有符号距离。正确分类的样本具有正间隔，错误分类的样本具有负间隔，位于决策面的样本间隔为零。这一尺度把两类观测统一起来，据此可判断哪些点更容易因边界或样本扰动而改变分类。
 
 定义第 $i$ 个样本的\textbf{函数间隔}为
 \begin{equation}\label{eq:svm-functional-margin}
@@ -90,19 +90,19 @@ SVM 并不最大化所有样本的平均距离，因为平均值可能被远离�
 \frac{y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)}
 {\|\boldsymbol w\|_2}.
 \]
-SVM 试图最大化 $\gamma$。对线性可分的训练数据，我们可以借助参数缩放的不变性，规定\emph{最小函数间隔等于 $1$}。这相当于要求每个样本满足
+SVM 试图最大化 $\gamma$。对线性可分的训练数据，可利用参数缩放的不变性，规定\emph{最小函数间隔等于 $1$}。这相当于要求每个样本满足
 \[
 y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)\geq1.
 \]
 在这种规范化下，最小几何间隔为 $\gamma=1/\|\boldsymbol w\|_2$。因为欧氏范数总为正，最大化 $1/\|\boldsymbol w\|_2$ 等价于最小化 $\frac12\|\boldsymbol w\|_2^2$。于是得到\textbf{硬间隔 SVM 的原始优化问题}：
 \begin{equation}\label{eq:svm-primal}
-\boxed{\begin{aligned}
+\begin{aligned}
 \min_{\boldsymbol w,b}\quad&
 \frac12\|\boldsymbol w\|_2^2\\
 \text{s.t.}\quad&
 y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)\geq1,
 \quad i=1,\ldots,n.
-\end{aligned}}
+\end{aligned}
 \end{equation}
 系数 $1/2$ 不改变最优点，只是为了使梯度写成
 \[
@@ -117,7 +117,7 @@ y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)\geq1,
 
 对于规范化的最优解，恰好满足
 \begin{equation}\label{eq:svm-support}
-\boxed{y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)=1}
+y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)=1
 \end{equation}
 的训练样本称为\textbf{支持向量}。它们位于两条间隔边界
 \[
@@ -126,9 +126,9 @@ y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)\geq1,
 \]
 之上。需明确区分
 \begin{equation}\label{eq:svm-width}
-\boxed{\text{单侧几何间隔}=\frac1{\|\boldsymbol w\|_2},
+\text{单侧几何间隔}=\frac1{\|\boldsymbol w\|_2},
 \qquad
-\text{两侧边界总宽度}=\frac2{\|\boldsymbol w\|_2}.}
+\text{两侧边界总宽度}=\frac2{\|\boldsymbol w\|_2}.
 \end{equation}
 不同教材有时用“间隔”指单侧距离，有时指完整宽度；它们只相差常数 $2$，不会改变最大间隔超平面的选择\cite[第9章]{james2023}。
 
@@ -156,20 +156,21 @@ y_i(\boldsymbol w^{\mathsf T}\boldsymbol x_i+b)\geq1,
 
 硬间隔 SVM 要求数据可以被某个超平面完全分开。如果样本受到噪声影响而不可线性分离，式\eqref{eq:svm-primal}就不存在可行解，通常应考虑允许间隔违反的\textbf{软间隔 SVM}。另外，线性 SVM 与逻辑回归虽然都可以产生线性分类边界，但前者围绕分类间隔建模，后者通过条件概率和对数损失估计参数；二者不应视作相同的优化问题。
 
-教学示意图仅用于说明最大间隔的几何意义。实际泛化能力仍受数据分布、特征缩放、噪声、正则化及测试设计影响。
+构造数据示意图仅用于说明最大间隔的几何意义。实际泛化能力仍受数据分布、特征缩放、噪声、正则化及测试设计影响。
 
 \subsection{硬间隔部分小结}
 
 硬间隔 SVM 的推导链条是：\textbf{正确分类条件 $\rightarrow$ 点到超平面距离 $\rightarrow$ 几何间隔 $\rightarrow$ 函数间隔规范化 $\rightarrow$ 凸二次规划}。支持向量是恰好落在规范化间隔边界上的样本，它们直观地解释了哪些训练点对最大间隔分类边界具有关键作用。
 
-\subsection{进阶：从几何最优到可直接求解的二次规划}
+\subsection{凸二次规划的标准形式与数值求解}
 
 前面已经从最大间隔原则得到了式\eqref{eq:svm-primal}。下面进一步回答三个问题：计算机怎样求出最优参数？为什么只有少量训练样本出现在最终决策函数中？当数据不能线性分开时，应当怎样修改模型？这一部分以二分类为主，沿用前文的符号，结合凸优化理论进行推导\cite{liu2020,lihang2019,zhou2016}。
 
-\subsubsection{几何直觉：分类正确与分类间隔不是同一个目标}
+\subsubsection{可行分类边界与间隔比较}
 
 图\ref{fig:svm-max-margin}说明同一组线性可分样本可以存在多条可行分割直线。尽管这些直线具有相同的训练分类正确率，它们的最小几何间隔仍可能不同。最大间隔原则提供了进一步选择分类边界的准则。
 
+相关几何结构或函数性质见图\ref{fig:svm-boundary-family}。
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}
 \begin{axis}[width=.48\textwidth,height=5.5cm,xmin=-5,xmax=5,ymin=-3,ymax=3,
@@ -200,6 +201,7 @@ xlabel={$t$},ylabel={$\gamma(t)$},title={最小几何间隔},grid=major,grid sty
 
 硬间隔 SVM 的约束定义凸可行域，目标函数的等高线对应权重向量的等范数集合。在固定偏置的截面中，可以将优化过程理解为寻找与可行域相交的最小范数等高线。
 
+相关几何结构或函数性质见图\ref{fig:svm-parameter-space}。
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}
 \begin{axis}[width=.72\textwidth,height=7cm,axis equal image,
@@ -233,12 +235,12 @@ A=\begin{pmatrix}YX&\boldsymbol y\end{pmatrix},
 \]
 原始问题可以写成标准凸 QP：
 \[
-\boxed{\min_{\boldsymbol z}\ \frac12\boldsymbol z^{\mathsf T}P\boldsymbol z
-\quad\text{s.t.}\quad A\boldsymbol z\geq\boldsymbol1.}
+\min_{\boldsymbol z}\ \frac12\boldsymbol z^{\mathsf T}P\boldsymbol z
+\quad\text{s.t.}\quad A\boldsymbol z\geq\boldsymbol1.
 \]
 使用 COPT、Gurobi 等通用凸二次规划求解器时，应将权重与偏置设为自由连续变量；目标函数的二次项仅包含权重，不包含偏置。求解后应检查优化状态、约束可行性、目标值和间隔。此处给出通用数学模型，不依赖具体版本的 Python API。
 
-\subsection{拉格朗日对偶：为什么支持向量可以决定分类器}
+\subsection{拉格朗日对偶与支持向量表示}
 
 \subsubsection{从不等式约束到拉格朗日函数}
 
@@ -261,7 +263,7 @@ $\max_{\boldsymbol\alpha\geq0}q(\boldsymbol\alpha)$。
 \end{align*}
 令第一式为零，得到
 \begin{equation}\label{eq:svm-weight-expansion}
-\boxed{\boldsymbol w=\sum_i\alpha_i y_i\boldsymbol x_i.}
+\boldsymbol w=\sum_i\alpha_i y_i\boldsymbol x_i.
 \end{equation}
 若 $\sum_i\alpha_i y_i\ne0$，由于 $b$ 是自由变量，对 $b$ 取下确界为 $-\infty$；因此有限对偶值必须满足
 \begin{equation}\label{eq:svm-dual-balance}
@@ -276,11 +278,11 @@ q(\boldsymbol\alpha)
 \end{align*}
 定义 $Q_{ij}=y_i y_j\boldsymbol x_i^{\mathsf T}\boldsymbol x_j$，最终得到硬间隔对偶问题：
 \begin{equation}\label{eq:svm-hard-dual}
-\boxed{\begin{aligned}
+\begin{aligned}
 \max_{\boldsymbol\alpha}\quad&
 \boldsymbol1^{\mathsf T}\boldsymbol\alpha-\frac12\boldsymbol\alpha^{\mathsf T}Q\boldsymbol\alpha\\
 \text{s.t.}\quad&\boldsymbol y^{\mathsf T}\boldsymbol\alpha=0,\qquad \boldsymbol\alpha\geq0.
-\end{aligned}}
+\end{aligned}
 \end{equation}
 注意 $Q=YXX^{\mathsf T}Y$，对任意 $\boldsymbol u\in\mathbb R^n$，
 \[
@@ -326,17 +328,19 @@ y_i f(\boldsymbol x_i)\geq1-\xi_i,\qquad \xi_i\geq0.
 \]
 如果不惩罚松弛变量，优化可以任意违反间隔，因此在目标函数中增加线性惩罚：
 \begin{equation}\label{eq:svm-soft-primal}
-\boxed{\begin{aligned}
+\begin{aligned}
 \min_{\boldsymbol w,b,\boldsymbol\xi}\quad&
 \frac12\|\boldsymbol w\|^2+C\sum_i\xi_i\\
 \text{s.t.}\quad&y_i f(\boldsymbol x_i)\geq1-\xi_i,\qquad \xi_i\geq0.
-\end{aligned}}
+\end{aligned}
 \end{equation}
 其中 $C>0$ 为惩罚参数。目标仍是凸二次函数，约束仍是线性约束。软间隔总是存在严格可行点，例如取 $\boldsymbol w=0,b=0,\xi_i=2$。
 
 对于固定的 $\boldsymbol w,b$，因 $C>0$，最优松弛变量必为
 $\xi_i=\max\{0,1-y_if(\boldsymbol x_i)\}$。据此可解释样本状态：
-\begin{center}
+相关内容汇总于表\ref{tab:svm-slack-states}。
+\begin{table}[htbp]\centering
+\caption{分类得分与松弛变量的关系}\label{tab:svm-slack-states}
 \begin{tabular}{lll}\toprule
 最优 $\xi_i$ & 函数间隔 $t_i=y_if(\boldsymbol x_i)$ & 样本状态\\\midrule
 $0$ & $t_i\geq1$ & 正确分类，满足间隔\\
@@ -344,8 +348,9 @@ $(0,1)$ & $0<t_i<1$ & 正确分类，进入间隔带\\
 $1$ & $t_i=0$ & 位于决策边界\\
 $>1$ & $t_i<0$ & 错误分类\\\bottomrule
 \end{tabular}
-\end{center}
+\end{table}
 
+相关几何结构或函数性质见图\ref{fig:svm-slack}。
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}[x=2.3cm,y=.65cm]
 \fill[accent!8] (-1,-.3) rectangle (1,5.4);
@@ -419,11 +424,11 @@ L=\frac12\|\boldsymbol w\|^2+C\sum_i\xi_i
 关于 $\boldsymbol w,b$ 的驻点条件与硬间隔相同；关于 $\xi_i$ 的驻点条件为
 $C-\alpha_i-\mu_i=0$，因此 $0\leq\alpha_i\leq C$。消去原始变量后，
 \begin{equation}\label{eq:svm-soft-dual}
-\boxed{\begin{aligned}
+\begin{aligned}
 \max_{\boldsymbol\alpha}\quad&
 \boldsymbol1^{\mathsf T}\boldsymbol\alpha-\frac12\boldsymbol\alpha^{\mathsf T}Q\boldsymbol\alpha\\
 \text{s.t.}\quad&\boldsymbol y^{\mathsf T}\boldsymbol\alpha=0,\qquad 0\leq\alpha_i\leq C.
-\end{aligned}}
+\end{aligned}
 \end{equation}
 互补松弛条件为
 \[
@@ -439,9 +444,9 @@ $C-\alpha_i-\mu_i=0$，因此 $0\leq\alpha_i\leq C$。消去原始变量后，
 \]
 注意第三种状态不一定表示错误分类，也可能恰好在间隔边界上。对于 $0<\alpha_i<C$ 的样本，可以直接用式\eqref{eq:svm-b-recover}计算 $b$；若不存在这样的自由支持向量，则应使用 KKT 不等式确定偏置的可行区间。
 
-\subsection{计算机如何求解：SMO 与次梯度方法}
+\subsection{数值求解：SMO 与次梯度方法}
 
-\subsubsection{SMO 为什么每次更新两个乘子}
+\subsubsection{SMO 的双变量更新机制}
 
 序列最小最优化算法（Sequential Minimal Optimization，SMO）针对对偶问题的特殊结构进行分解\cite[第7章]{lihang2019}。如果其余变量固定，只改变一个乘子就会破坏 $\boldsymbol y^{\mathsf T}\boldsymbol\alpha=0$。因此每次选两个变量 $\alpha_i,\alpha_j$，使
 \[
@@ -461,6 +466,7 @@ y_i\alpha_i+y_j\alpha_j=s
 \]
 公式右端使用更新前的乘子。
 
+相关几何结构或函数性质见图\ref{fig:svm-smo}。
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}[x=4.2cm,y=4.2cm]
 \fill[accent!8] (0,0) rectangle (1,1);
@@ -520,7 +526,7 @@ g_b=-C\sum_{i\in I}y_i.
 
 \subsection{核技巧：从线性超平面到非线性分类边界}
 
-\subsubsection{为什么特征映射能够改变线性可分性}
+\subsubsection{特征映射与线性可分性}
 
 考虑内外两圈数据。令内圈半径为 $1$，标签为 $-1$；外圈半径为 $2$，标签为 $+1$，每圈在四个坐标轴方向上取点。这两类样本的凸包均包含原点，因此不存在严格分离它们的二维直线。构造映射
 \[
@@ -529,6 +535,7 @@ g_b=-C\sum_{i\in I}y_i.
 内圈在三维空间的第三坐标为 $1$，外圈为 $4$，可用平面 $z=5/2$ 分离。映射回原始空间便得到圆形边界
 $x_1^2+x_2^2=5/2$。
 
+相关几何结构或函数性质见图\ref{fig:svm-feature-map}。
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}
 \begin{axis}[width=.47\textwidth,height=5.8cm,axis equal image,xmin=-2.4,xmax=2.4,ymin=-2.4,ymax=2.4,
@@ -550,7 +557,7 @@ xlabel={$x_1$},ylabel={$x_2$},zlabel={$z$},grid=major,grid style={draw=gray!15}]
 \label{fig:svm-feature-map}
 \end{figure}
 
-\subsubsection{核函数为何不需要显式升维}
+\subsubsection{核函数与隐式特征映射}
 
 将原始空间的内积替换为特征空间内积：
 \[
@@ -576,6 +583,7 @@ K_{\mathrm{RBF}}(\boldsymbol x,\boldsymbol z)&=\exp(-\gamma\|\boldsymbol x-\bold
 \end{align*}
 其中多项式核可取 $\gamma>0,r\geq0,p$ 为正整数，高斯核取 $\gamma>0$。对于高斯核，若两点相距 $s$，相似度为 $\exp(-\gamma s^2)$；$\gamma$ 越大，相似度随距离衰减越快，分类边界可能更加局部化。它与前文表示几何间隔的 $\gamma$ 是不同用途的参数。
 
+相关几何结构或函数性质见图\ref{fig:svm-rbf-width}。
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}
 \begin{axis}[width=.76\textwidth,height=5.7cm,xmin=0,xmax=4,ymin=0,ymax=1.05,
@@ -592,29 +600,31 @@ xlabel={距离 $s=\|\boldsymbol x-\boldsymbol z\|$},ylabel={$K_{\mathrm{RBF}}$},
 \label{fig:svm-rbf-width}
 \end{figure}
 
-\subsubsection{核 SVM 的完整求解模型}
+\subsubsection{核 SVM 的对偶优化模型}
 
 构造 $K_{ij}=K(\boldsymbol x_i,\boldsymbol x_j)$，令 $Q_{ij}=y_i y_jK_{ij}$。软间隔核 SVM 的训练问题仍为
 \[
-\boxed{\begin{aligned}
+\begin{aligned}
 \max_{\boldsymbol\alpha}\quad&
 \sum_i\alpha_i-\frac12\sum_{i,j}\alpha_i\alpha_j y_i y_jK_{ij}\\
 \text{s.t.}\quad&\sum_i\alpha_i y_i=0,\qquad 0\leq\alpha_i\leq C.
-\end{aligned}}
+\end{aligned}
 \]
 与线性 SVM 相比，优化变量和约束均未改变，仅替换了二次项中的内积。求得乘子后，预测函数为
 \begin{equation}\label{eq:svm-kernel-decision}
-\boxed{\hat y=\operatorname{sign}\left(\sum_{i:\alpha_i>0}\alpha_i y_i
-K(\boldsymbol x_i,\boldsymbol x)+b\right).}
+\hat y=\operatorname{sign}\left(\sum_{i:\alpha_i>0}\alpha_i y_i
+K(\boldsymbol x_i,\boldsymbol x)+b\right).
 \end{equation}
 偏置可用自由支持向量 $k$ 的等式
 $b=y_k-\sum_i\alpha_i y_iK(\boldsymbol x_i,\boldsymbol x_k)$ 恢复。如果没有自由支持向量，按 KKT 不等式确定偏置。对于稠密核矩阵，直接保存全部元素需要 $O(n^2)$ 空间，因此核技巧并不意味着所有大样本问题都能高效解决。
 
-\subsection{统计学习视角、实践规范与扩展小结}
+\subsection{统计学习解释与模型评价}
 
 线性 SVM 与逻辑回归可共享得分函数 $f(\boldsymbol x)=\boldsymbol w^{\mathsf T}\boldsymbol x+b$，但前者使用合页损失与间隔正则化，后者使用对数损失 $\ln(1+\exp(-yf(\boldsymbol x)))$，通常可从 Bernoulli 条件概率模型的最大似然出发推导。两种损失的图形对照见图\ref{fig:svm-losses}。逻辑回归的预测可直接解释为模型估计的条件概率；标准 SVM 的得分不是概率，如需概率输出应另行校准。
 
-\begin{center}
+相关内容汇总于表\ref{tab:logistic-svm}。
+\begin{table}[htbp]\centering
+\caption{逻辑回归与 SVM 的性质比较}\label{tab:logistic-svm}
 \begin{tabularx}{\textwidth}{lXX}\toprule
 比较项&逻辑回归&支持向量机\\\midrule
 学习思想&条件概率建模&最大间隔与正则化经验风险\\
@@ -624,13 +634,13 @@ $b=y_k-\sum_i\alpha_i y_iK(\boldsymbol x_i,\boldsymbol x_k)$ 恢复。如果没�
 非线性推广&构造非线性特征等&特征映射与核技巧\\
 \bottomrule
 \end{tabularx}
-\end{center}
+\end{table}
 
 实践中应先划分训练集与测试集，仅用训练数据拟合标准化参数；再通过交叉验证选择 $C$ 与核参数。特征缩放会改变欧氏距离及正则化的含义，尤其影响 RBF 核。类别不平衡时，应根据实际代价选用适当的评价指标和类别权重，不能仅看训练准确率。模型训练的全局最优性是针对给定数据和目标函数的结论，并不意味着泛化误差最小。
 
 建议结合《统计学习方法》第7章、《机器学习》第6章以及 ISLP 第9章继续阅读\cite{lihang2019,zhou2016,james2023}。
 
-\subsection{扩展内容总结}
+\subsection{算法选择与适用条件}
 
 支持向量机的完整逻辑可以概括为：
 \[

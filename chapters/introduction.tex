@@ -1,0 +1,28 @@
+\section*{引言}\label{sec:introduction}
+\addcontentsline{toc}{section}{引言}
+
+\subsection*{研究背景与目标}
+机器学习的核心问题是在有限样本条件下构造具有预测能力的函数。统计学习方法不仅涉及模型表达能力，还涉及损失函数、参数估计、数值优化与泛化误差之间的联系。本文以监督学习为主要对象，对经典回归、分类及集成方法的数学结构进行归纳，结合已有数值实验考察部分理论结论的可验证性\cite{lihang2019,zhou2016,james2023}。
+
+\subsection*{分析框架与组织结构}
+全文按照图\ref{fig:research-framework}所示的逻辑展开：以样本及经验风险定义为基础，依次讨论参数估计与优化、模型评价与正则化、树模型及集成方法、最大间隔分类，再通过数值实验与综合评价归纳适用条件。
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[every node/.style={font=\small,align=center},stage/.style={draw=accent,fill=pale,rounded corners=2pt,minimum height=9mm,text width=.25\textwidth,inner sep=3pt},arrow/.style={->,thick,draw=accent}]
+\node[stage] (a) at (0,0) {样本与学习准则\\经验风险};
+\node[stage] (b) at (5,0) {参数估计与优化\\回归、梯度方法};
+\node[stage] (c) at (5,-1.65) {评价与正则化\\泛化、复杂度};
+\node[stage] (d) at (0,-1.65) {树模型与集成\\划分、预测聚合};
+\node[stage] (e) at (0,-3.3) {最大间隔分类\\SVM、凸优化};
+\node[stage] (f) at (5,-3.3) {数值验证与评价\\复现、适用边界};
+\draw[arrow] (a)--(b);
+\draw[arrow] (b)--(c);
+\draw[arrow] (c)--(d);
+\draw[arrow] (d)--(e);
+\draw[arrow] (e)--(f);
+\end{tikzpicture}
+\caption{统计学习方法的分析框架}\label{fig:research-framework}
+\end{figure}
+
+\subsection*{基本设定与适用范围}
+本文采用有限样本监督学习的基本记号，并区分训练目标与总体预测风险。各模型的假设分别在相应章节说明，不将正态性、独立同分布、线性可分性或满列秩视为所有算法的共同前提。数值实验使用明确给出的构造数据及随机种子；涉及独立测试误差时，仅将其解释为指定实验条件下的结果。推导中的最优性结论限于相应目标函数与成立条件。

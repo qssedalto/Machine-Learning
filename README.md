@@ -1,11 +1,11 @@
 # 机器学习
-本仓库为中文机器学习学习笔记，正文采用“问题背景—概念与原理—数学模型—关键推导—适用条件”的结构，涵盖十个机器学习主题，配有数学示意图与基础数值实验。
+本仓库为中文统计学习与机器学习研究笔记，采用学术论文式组织：摘要、关键词、引言、符号说明、十个理论主题、数值实验与可复现性验证、综合评价与参考文献。保留数学定义、关键推导及算法原理，不设置手算习题。
 
 阅读入口：[main.pdf](main.pdf)（构建产物可能暂时落后于源码）；主文件：[main.tex](main.tex)；版式：[config/preamble.tex](config/preamble.tex)；参考文献：[references.bib](references.bib)。
 
-## 十课目录
+## 核心理论章节
 
-| 课次 | 主题 | 核心内容 | 正文 |
+| 章节 | 主题 | 核心内容 | 正文 |
 |---|---|---|---|
 | 1 | 机器学习基础 | 特征、模型、损失函数与经验风险 | [基础](chapters/foundations.tex) |
 | 2 | 线性回归与最小二乘 | RSS、MSE、导数与正规方程 | [最小二乘](chapters/least_squares.tex) |
@@ -20,9 +20,11 @@
 
 ## 源码组织与维护
 
-main.tex 负责标题、摘要、目录和十个章节的顺序装配。chapters/ 每个正式章节各有一个 tex 文件。config/preamble.tex 统一字体、页边距、数学公式、图表和引用设置。appendices/notation.tex 是常用符号表；appendices/development_log.tex 保存历史修订记录（不纳入正式教材）；references.bib 保存四种既有教材参考资料。
+main.tex 负责摘要、目录、引言、符号说明、十个理论章节及实验、综合评价和参考文献的顺序装配。chapters/ 每个正式章节各有一个 tex 文件。config/preamble.tex 统一字体、页边距、数学公式、图表和引用设置。appendices/notation.tex 是置于正文前部的常用符号表；appendices/development_log.tex 保存历史修订记录（不纳入正式教材）；references.bib 保存四种既有教材参考资料。
 
-code/ 包含配套 Python 数值实验，requirements.txt 列出实验依赖。
+[引言与分析框架](chapters/introduction.tex) · [数值实验及复现说明](chapters/experiments.tex) · [综合评价与结论](chapters/conclusion.tex)
+
+code/ 包含配套 Python 数值实验，requirements.txt 列出实验依赖。多项式实验使用固定随机种子 20261109，正文表格与脚本采用同一数据生成机制和候选次数；结果仅用于构造数据上的数值验证。
 
 ## 编译
 

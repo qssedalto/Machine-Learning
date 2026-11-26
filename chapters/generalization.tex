@@ -1,6 +1,6 @@
 \section{过拟合、泛化与模型评价}\label{ch:generalization}
 
-\subsection{泛化问题的统计含义}
+\subsection{泛化误差的统计含义}
 
 模型评价是用有限的独立观测估计未知总体上的预测表现，因此本身就是统计推断问题。训练误差描述模型对已观察记录的拟合程度；泛化能力描述模型学到的规律能否迁移到未来观测。评价之前首先应明确什么是新样本：如果模型将在下一学期使用，随机拆分当前学期记录不一定代表未来表现；如果模型将预测新学生，同一学生的多次记录也应谨慎分组。评价过程应尽量模拟真实部署时的信息条件。
 
@@ -13,14 +13,16 @@
 \textbf{过拟合}（Overfitting）指模型过度适应训练样本的细节，甚至记住其中的噪声和偶然性，结果在未见数据上表现不佳。
 
 \textbf{欠拟合}（Underfitting）则是模型能力或训练程度不足，没能充分表示数据中的主要规律。例如数据明显呈曲线趋势，却始终只用一条直线拟合，训练误差可能很大，新数据预测也不理想。
-\begin{center}
+相关内容汇总于表\ref{tab:fit-regimes}。
+\begin{table}[htbp]\centering
+\caption{欠拟合、适度拟合与过拟合的典型表现}\label{tab:fit-regimes}
 \begin{tabularx}{\textwidth}{p{22mm}XX}\toprule
 情况&训练数据表现&未见数据表现\\\midrule
 欠拟合&常常不好&常常不好\\
 合理拟合&能学到主要规律&相对稳定\\
 过拟合&可能特别好&可能明显变差\\\bottomrule
 \end{tabularx}
-\end{center}
+\end{table}
 模型更复杂并非一定过拟合，模型更简单也并非一定欠拟合。关键是看它是否适应真实数据规律，以及是否能推广到新数据。
 
 \subsection{训练、测试与泛化误差}
@@ -39,7 +41,7 @@
 \begin{equation}\label{eq:generalization-risk}
 R(\hat f)=\mathbb E_{(X,Y)\sim P}[L(Y,\hat f(X))].
 \end{equation}
-$\mathbb E$ 是期望，$P$ 是目标数据的联合分布。我们通常不知道这个分布，所以难以直接计算 $R(\hat f)$；独立测试集上的平均损失只是它的\textbf{统计估计}。
+$\mathbb E$ 是期望，$P$ 是目标数据的联合分布。该目标分布通常未知，所以难以直接计算 $R(\hat f)$；独立测试集上的平均损失只是它的\textbf{统计估计}。
 
 \subsection{训练集、验证集与测试集}
 
@@ -146,21 +148,39 @@ z=\frac{x-\mu}{\sigma}.
 \]
 如果希望同时考虑两者，常用它们的调和平均 $F_1$：
 \[
-\boxed{F_1=\frac{2PR}{P+R}.}
+F_1=\frac{2PR}{P+R}.
 \]
 在 $F_1$ 的计算中，$P$ 表示查准率（Precision），$R$ 表示查全率（Recall）。调和平均可以综合衡量查准率与查全率：当其中一项明显较低时，$F_1$ 也会受到影响。上述指标的分母为零时须明确处理规则。
 
 分类阈值变化时，查准率与查全率可能随之改变。ROC 曲线以假正例率 $\mathrm{FPR}=FP/(FP+TN)$ 为横轴、真正例率 $\mathrm{TPR}=TP/(TP+FN)$ 为纵轴，展示不同分类阈值下的表现。ROC 曲线下面积称为 AUC，反映模型区分正负样本的排序能力；它与固定阈值下的准确率评价角度不同。
 
-\subsection{多项式回归}
+\subsection{多项式回归的数值验证}
 
-考虑数据生成关系 $y=\sin x+\varepsilon$，其中 $\varepsilon$ 为均值为零的随机扰动。针对一组固定的数据划分，记录不同次数多项式拟合得到的训练与测试 MSE：
+为验证模型复杂度对预测误差的影响，采用固定随机种子 $20261109$ 生成构造数据。响应变量满足
+\begin{equation}\label{eq:poly-data}
+Y=\sin(2\pi X)+\varepsilon,\qquad \varepsilon\sim N(0,0.18^2).
+\end{equation}
+训练输入为从 $[0,1]$ 均匀分布独立抽取的 28 个观测，测试输入为同区间的 400 个等距网格点；训练与测试噪声分别生成。使用 NumPy 的 \texttt{Polynomial.fit} 进行不同次数的最小二乘拟合。表\ref{tab:polynomial-compare}记录同一次运行的结果（NumPy 2.3.5，误差保留六位小数）。
 \begin{table}[htbp]\centering
-\caption{不同多项式次数对应的训练与测试误差}\label{tab:polynomial-compare}
-\begin{tabular}{rrrl}\toprule
-多项式次数&训练 MSE&测试 MSE&观察\\\midrule
-1&0.1869&0.1740&模型较简单，误差偏高\\
-8&0.0368&0.0359&本次训练和测试误差均较低\\
-25&0.0269&0.2600&训练更好，测试明显变差\\\bottomrule
+\caption{不同多项式次数的训练与测试均方误差}\label{tab:polynomial-compare}
+\begin{tabular}{rrr}\toprule
+多项式次数 & 训练 MSE & 测试 MSE\\\midrule
+1 & 0.199887 & 0.253292\\
+3 & 0.038191 & 0.038137\\
+5 & 0.037800 & 0.039422\\
+8 & 0.035075 & 0.137640\\
+10 & 0.030015 & 4.095677\\\bottomrule
 \end{tabular}
 \end{table}
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}
+\begin{semilogyaxis}[width=.78\textwidth,height=6cm,xlabel={多项式次数},ylabel={MSE（对数尺度）},xtick={1,3,5,8,10},grid=major,grid style={draw=gray!15},legend pos=north west]
+\addplot[accent,thick,mark=*] coordinates {(1,.199887)(3,.038191)(5,.037800)(8,.035075)(10,.030015)};
+\addlegendentry{训练集}
+\addplot[red!65!black,thick,mark=square*,dashed] coordinates {(1,.253292)(3,.038137)(5,.039422)(8,.137640)(10,4.095677)};
+\addlegendentry{测试集}
+\end{semilogyaxis}
+\end{tikzpicture}
+\caption{多项式复杂度与训练、测试误差的关系}\label{fig:poly-comparison}
+\end{figure}
+图\ref{fig:poly-comparison}显示，训练误差随次数增加而下降，但测试误差在高次数时显著上升。三次模型在本次预设候选集合中的测试误差最低；这一观察仅描述固定构造实验，不能作为在测试集上选择超参数的依据，也不意味着三次模型普遍最优。正式建模应通过验证集或交叉验证选阶，并使用独立测试集报告最终性能。复现实验见第\ref{ch:experiments}节。

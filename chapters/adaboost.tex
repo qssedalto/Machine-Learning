@@ -17,11 +17,11 @@ D=\{(\boldsymbol x_i,y_i)\}_{i=1}^{n},\qquad y_i\in\{-1,+1\}.
 AdaBoost 依次训练 $M$ 个弱分类器 $h_m(\boldsymbol x)\in\{-1,+1\}$。与普通多数投票不同，各分类器具有权重 $\alpha_m$：
 \begin{equation}\label{eq:adaboost-model}
 F(\boldsymbol x)=\sum_{m=1}^{M}\alpha_mh_m(\boldsymbol x),\qquad
-\boxed{H(\boldsymbol x)=\operatorname{sign}[F(\boldsymbol x)].}
+H(\boldsymbol x)=\operatorname{sign}[F(\boldsymbol x)].
 \end{equation}
 在 $F(\boldsymbol x)=0$ 的情况下需要约定平票规则。$\alpha_m$ 决定第 $m$ 个学习器的贡献大小；问题在于：\textbf{怎样根据训练表现确定它？}
 
-\subsection{为什么需要样本权重}
+\subsection{样本权重与加权经验错误率}
 
 样本权重表示当前训练阶段对不同观测的关注程度，并不是说样本在现实总体中的出现概率发生了改变。第一轮通常从等权样本开始，错分点在后续训练中的相对权重增加。因此即便两个候选分类器的普通错误率相同，它们也可能因为错分的高权重样本不同而获得不同评价。
 
@@ -31,8 +31,8 @@ w_{1,i}=\frac1n,\qquad \sum_{i=1}^{n}w_{m,i}=1.
 \end{equation}
 本轮分类器 $h_m$ 的\textbf{加权错误率}为
 \begin{equation}\label{eq:adaboost-error}
-\boxed{\varepsilon_m=\sum_{i=1}^{n}w_{m,i}
-\,\mathbf1\{y_i\ne h_m(\boldsymbol x_i)\}.}
+\varepsilon_m=\sum_{i=1}^{n}w_{m,i}
+\,\mathbf1\{y_i\ne h_m(\boldsymbol x_i)\}.
 \end{equation}
 其中指示函数 $\mathbf1\{\cdot\}$ 在条件成立时为 $1$，否则为 $0$。普通错误率只看错分样本的个数，加权错误率还关心错分样本目前所占的权重。
 
@@ -56,7 +56,7 @@ J'(\alpha)=-(1-\varepsilon_m)e^{-\alpha}
 \]
 令导数为零，整理得到 $e^{2\alpha}=(1-\varepsilon_m)/\varepsilon_m$，两边取自然对数，即得到核心公式
 \begin{equation}\label{eq:adaboost-alpha}
-\boxed{\alpha_m=\frac12\ln\frac{1-\varepsilon_m}{\varepsilon_m}.}
+\alpha_m=\frac12\ln\frac{1-\varepsilon_m}{\varepsilon_m}.
 \end{equation}
 当 $0<\varepsilon_m<1$ 时，$J''(\alpha)=(1-\varepsilon_m)e^{-\alpha}+\varepsilon_m e^\alpha>0$，所以该驻点是唯一全局最小点。
 
@@ -95,7 +95,9 @@ AdaBoost 的一个局限是：如果某些训练标签本身错误，算法可�
 
 \subsection{与 Bagging 的联系和区别}
 
-\begin{center}
+相关内容汇总于表\ref{tab:bagging-boosting}。
+\begin{table}[htbp]\centering
+\caption{Bagging 与 AdaBoost 的机制比较}\label{tab:bagging-boosting}
 \begin{tabularx}{\textwidth}{p{29mm}XX}\toprule
 比较项目&Bagging&经典 AdaBoost\\\midrule
 基学习器训练&可分别训练，依赖相对较弱&逐轮训练，后一轮依赖前一轮\\
@@ -103,8 +105,8 @@ AdaBoost 的一个局限是：如果某些训练标签本身错误，算法可�
 预测聚合&一般等权平均或投票&由 $\alpha_m$ 决定加权组合\\
 典型作用&稳定高方差学习器的预测&逐步构造更强的组合分类器\\\bottomrule
 \end{tabularx}
-\end{center}
+\end{table}
 
-\subsection{本章小结}
+\subsection{方法评价与适用条件}
 
 AdaBoost 的核心是两次权重调整：根据加权错误率用式\eqref{eq:adaboost-alpha}确定\emph{本轮分类器的权重}，再根据式\eqref{eq:adaboost-reweight}确定\emph{下一轮训练样本的权重}。它展示了统计学习中另一种重要思想：通过一系列具有依赖关系的简单学习器，逐步构建复合模型。训练过程的改进仍须由独立数据评价其泛化效果。

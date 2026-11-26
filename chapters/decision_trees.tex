@@ -4,11 +4,13 @@
 
 树模型不要求所有样本遵循同一种全局线性关系，而是递归地把特征空间分成不同区域，在各区域中采用相应的预测规则。一个特征的作用可能依赖此前经过的分支，因此决策树能够自然表达非线性关系与特征交互。训练时需要比较候选划分并确定节点结构；预测时则只需从根节点沿已经确定的判断条件走到叶节点。模型本身是训练获得的规则结构，而不是人为预先指定的全部判断逻辑。
 
-第\ref{ch:logistic}节的逻辑回归利用线性得分和 Sigmoid 函数预测类别概率。现在换一种建模方式：如果需要根据“是否有稳定工作”和“是否有房产”判断是否批准一笔教学用贷款，可以先问是否有工作；如果有，就预测批准；如果没有，再问是否有房产。这样由一系列判断条件组成的模型称为\textbf{决策树}（Decision Tree）。
+与第\ref{ch:logistic}节的线性概率模型不同，\textbf{决策树}（Decision Tree）利用递归特征划分构造分段预测规则，可表达非线性关系及特征交互。
 
 决策树包含\textbf{根节点}、用于继续判断的\textbf{内部节点}以及输出类别的\textbf{叶节点}。它通过递归划分数据建立预测规则，不必预先假设 $\boldsymbol w^{\mathsf T}\boldsymbol x+b$ 这样的线性边界。以下贷款数据仅为教学构造，不代表实际银行审批政策。
 
-\begin{center}
+相关内容汇总于表\ref{tab:tree-samples}。
+\begin{table}[htbp]\centering
+\caption{分类树的构造数据}\label{tab:tree-samples}
 \begin{tabular}{cccc}\toprule
 客户&有稳定工作&有房产&批准贷款\\\midrule
 1&是&是&是\\
@@ -18,16 +20,16 @@
 5&否&否&否\\
 6&否&否&否\\\bottomrule
 \end{tabular}
-\end{center}
+\end{table}
 面对这六条数据，应当优先按照哪个特征划分？如果只是凭经验选择，就无法解释为什么该划分更合理。决策树提供了可计算的\textbf{结点纯度}准则\cite[第4章]{zhou2016}\cite[第5章]{lihang2019}。
 
-\subsection{信息熵：度量类别不确定性}
+\subsection{信息熵与节点不确定性}
 
 节点不纯度衡量的是标签在该节点内的混杂程度，而不是特征自身的变化程度。若某节点全部是正类，只要采用节点多数类别预测，就能正确分类其中所有训练样本。若两类各占一半，当前节点的信息还不足以明确决定标签。信息熵提供了统一的度量尺度，使算法能够判断一次划分是否有效减少这种不确定性。
 
 设节点中共有 $K$ 个类别，第 $k$ 类的样本比例是 $p_k$，并满足 $p_k\geq0$、$\sum_{k=1}^{K}p_k=1$。\textbf{信息熵}（Entropy）定义为
 \begin{equation}\label{eq:tree-entropy}
-\boxed{H(D)=-\sum_{k=1}^{K}p_k\log_2p_k,}
+H(D)=-\sum_{k=1}^{K}p_k\log_2p_k,
 \end{equation}
 其中约定 $0\log_2 0=0$。对二分类问题，若正类比例为 $p$，则
 \begin{equation}\label{eq:binary-entropy}
@@ -42,7 +44,7 @@ H''(p)=-\frac1{p(1-p)\ln2}<0.
 \]
 因此 $H(p)$ 在 $p=1/2$ 处取得唯一最大值 $1$。这里的熵使用以 $2$ 为底的对数，所以单位为比特；改用自然对数只会改变数值单位，不改变相同数据下信息增益的排序。
 
-\subsection{信息增益：如何评价一次划分}
+\subsection{信息增益与划分准则}
 
 常见树算法采用贪心策略，先寻找当前节点最有利的划分，再对子节点独立重复这一过程，而不是枚举所有可能的完整树结构。这降低了训练难度，却意味着局部信息增益最大不保证整棵树全局最优。某些特征单独看来贡献很小，与其他特征组合时却具有很强的分类能力。这也是候选特征、划分准则与树深度都会影响最终模型的原因。
 
@@ -54,7 +56,7 @@ H(D\mid A)=\sum_{v=1}^{V}\frac{|D_v|}{|D|}H(D_v).
 
 \textbf{信息增益}定义为划分前后熵的减少量：
 \begin{equation}\label{eq:information-gain}
-\boxed{\operatorname{Gain}(D,A)=H(D)-H(D\mid A).}
+\operatorname{Gain}(D,A)=H(D)-H(D\mid A).
 \end{equation}
 采用经验概率时，这个量也可理解为标签与候选划分特征的经验互信息。经典 ID3 算法在每个节点选择信息增益较大的特征；这属于\textbf{局部贪心选择}，不保证生成全局最优的树。
 
@@ -62,6 +64,7 @@ H(D\mid A)=\sum_{v=1}^{V}\frac{|D_v|}{|D|}H(D_v).
 
 在当前节点，训练算法评估候选划分的信息增益，选择符合准则的划分，并递归处理子节点，直至达到停止条件。下图说明递归划分产生的树形决策规则。
 
+相关几何结构或函数性质见图\ref{fig:toy-decision-tree}。
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}[level distance=16mm, every node/.style={font=\small,align=center},
  level 1/.style={sibling distance=56mm},
@@ -84,7 +87,7 @@ H(D\mid A)=\sum_{v=1}^{V}\frac{|D_v|}{|D|}H(D_v).
 
 除了信息熵，另一种常见的纯度指标是\textbf{基尼不纯度}（Gini Impurity）：
 \begin{equation}\label{eq:gini}
-\boxed{G(D)=1-\sum_{k=1}^{K}p_k^2.}
+G(D)=1-\sum_{k=1}^{K}p_k^2.
 \end{equation}
 二分类时，
 \[
@@ -92,14 +95,16 @@ G(p)=1-p^2-(1-p)^2=2p(1-p).
 \]
 其最大值为 $1/2$（两类各占一半），最小值为 $0$（纯节点）。基尼指数与熵的数值范围不相同，但都用于衡量类别混杂程度。
 
-\begin{center}
+相关内容汇总于表\ref{tab:tree-criteria}。
+\begin{table}[htbp]\centering
+\caption{常见决策树算法及划分准则}\label{tab:tree-criteria}
 \begin{tabularx}{\textwidth}{p{29mm}p{27mm}X}\toprule
 算法&常用准则&划分方式与特点\\\midrule
 ID3&信息增益&离散属性可以产生多个分支\\
 C4.5&信息增益率&对多取值属性的偏好作一定调整\\
 CART 分类树&基尼不纯度&通常采用二叉划分\\\bottomrule
 \end{tabularx}
-\end{center}
+\end{table}
 在实际任务中，特征是否连续、是否存在缺失值、剪枝策略及其他约束也会影响建树方式，不能仅凭划分准则判断某种算法一定最优。
 
 \subsection{决策树过拟合与剪枝}
@@ -118,6 +123,6 @@ R_\alpha(T)=R(T)+\alpha|T|,
 
 逻辑回归根据线性得分建立概率模型，并通过优化对数损失估计参数；普通的轴平行决策树则通过递归划分特征空间得到分段规则。决策树可用叶节点样本比例给出类别概率估计，但这种比例未必经过概率校准。对于本章仅有六条样本的例子，即使训练准确率为 $100\%$，也不能断言对新的贷款样本具有良好泛化能力。
 
-\subsection{本章小结}
+\subsection{方法评价与适用条件}
 
 构建分类决策树的逻辑是：\textbf{计算节点纯度 $\rightarrow$ 比较候选划分 $\rightarrow$ 选择当前最优特征 $\rightarrow$ 递归划分 $\rightarrow$ 满足停止条件后预测}。信息熵、信息增益和基尼指数解释了它如何选择特征，剪枝解释了它如何避免对训练样本过度适应。

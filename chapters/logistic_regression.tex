@@ -1,6 +1,6 @@
 \section{逻辑回归与二分类}\label{ch:logistic}
 
-\subsection{从回归预测到分类概率}
+\subsection{二分类问题的概率建模}
 
 分类任务不仅关心预测类别，还可能关心模型对类别的估计概率。例如两个学生均被预测通过考试，但一个人的估计概率刚超过一半，另一个接近一，这两个预测对后续决策的意义并不相同。直接输出类别会丢失这些信息。逻辑回归保留了线性模型容易解释、易于优化的特点，并通过连接函数把实数得分转换为合法概率。
 
@@ -11,13 +11,15 @@
 y=\begin{cases}1,&\text{通过考试},\\0,&\text{未通过考试}.\end{cases}
 \]
 例如，考虑以下包含学习时间与是否通过考试的数据：
-\begin{center}
+相关内容汇总于表\ref{tab:logistic-samples}。
+\begin{table}[htbp]\centering
+\caption{二分类任务的构造样本}\label{tab:logistic-samples}
 \begin{tabular}{cc}\toprule
 学习时间 $x$（小时）&是否通过 $y$\\\midrule
 1&0\\2&0\\3&0\\4&1\\5&1\\\bottomrule
 \end{tabular}
-\end{center}
-我们希望估计的是通过考试的条件概率。线性得分没有天然的取值范围限制，而概率必须位于零与一之间。
+\end{table}
+建模目标是估计的是通过考试的条件概率。线性得分没有天然的取值范围限制，而概率必须位于零与一之间。
 
 因此，逻辑回归并不是直接把线性输出作为概率，而是\textbf{先计算线性得分，再用另一个函数把它映射到 $(0,1)$}。
 
@@ -31,6 +33,7 @@ Sigmoid 连接了实数得分与概率两个不同的尺度。曲线中间区域
 \end{equation}
 其中 $e$ 为自然对数的底数。
 $z$ 越大，输出越接近 $1$；$z$ 越小，越接近 $0$；任何有限 $z$ 的输出都严格在两者之间。
+相关几何结构或函数性质见图\ref{fig:sigmoid}。
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}
 \begin{axis}[width=.76\textwidth,height=6cm,xlabel={$z$},ylabel={$\sigma(z)$},xmin=-6,xmax=6,ymin=0,ymax=1.04,grid=major,grid style={draw=gray!15},ytick={0,.25,.5,.75,1}]
@@ -49,7 +52,7 @@ $z$ 越大，输出越接近 $1$；$z$ 越小，越接近 $0$；任何有限 $z$
 \end{equation}
 是否输出类别 $1$ 还需要指定阈值，常见阈值为 $0.5$。\textbf{预测概率和最终分类结果不是同一个概念}：阈值应结合误报、漏报代价和模型评价结果选择。
 
-\subsection{对数几率的解释}
+\subsection{对数几率与回归系数的统计解释}
 
 几率是事件发生概率与不发生概率之比，不能和概率混为一谈。在多元逻辑回归中，其他特征固定时，一个特征增加一单位，会使正类几率乘以对应系数的指数。概率实际改变多少还取决于原有概率水平，因此不能将回归系数直接解释为概率增加了多少个百分点。
 
@@ -83,8 +86,8 @@ P(y_i\mid x_i)=p_i^{y_i}(1-p_i)^{1-y_i}.
 \]
 再乘负号并取平均，极大化便转化为熟悉的极小化：
 \begin{equation}\label{eq:bce}
-\boxed{J(w,b)=-\frac1m\sum_{i=1}^{m}
-\left[y_i\ln p_i+(1-y_i)\ln(1-p_i)\right].}
+J(w,b)=-\frac1m\sum_{i=1}^{m}
+\left[y_i\ln p_i+(1-y_i)\ln(1-p_i)\right].
 \end{equation}
 它叫作\textbf{二元交叉熵}（Binary Cross-Entropy，BCE），也是当前伯努利概率模型的平均负对数似然。
 
@@ -104,7 +107,7 @@ P(y_i\mid x_i)=p_i^{y_i}(1-p_i)^{1-y_i}.
 \begin{align}
 \sigma'(z)
 &=\frac{e^{-z}}{(1+e^{-z})^2}\\
-&=\boxed{\sigma(z)\big[1-\sigma(z)\big].}\label{eq:sigmoid-derivative}
+&=\sigma(z)\big[1-\sigma(z)\big].\label{eq:sigmoid-derivative}
 \end{align}
 第二步，对单样本交叉熵 $\ell=-y\ln p-(1-y)\ln(1-p)$ 关于 $p$ 求导：
 \[
@@ -116,16 +119,16 @@ P(y_i\mid x_i)=p_i^{y_i}(1-p_i)^{1-y_i}.
 &=\frac{\partial\ell}{\partial p}\frac{\mathrm dp}{\mathrm dz}\\
 &=\left(-\frac yp+\frac{1-y}{1-p}\right)p(1-p)\\
 &=-y(1-p)+(1-y)p\\
-&=\boxed{p-y}.
+&=p-y.
 \end{align*}
 这一步最值得记住：\textbf{对线性得分 $z$ 求导，得到预测概率减去真实标签。}
 
 第三步，由 $z=wx+b$ 可知 $\partial z/\partial w=x$、$\partial z/\partial b=1$。所以对所有样本取平均：
 \begin{equation}\label{eq:logistic-full-gradient}
-\boxed{\begin{aligned}
+\begin{aligned}
 \frac{\partial J}{\partial w}&=\frac1m\sum_{i=1}^{m}(p_i-y_i)x_i,\\
 \frac{\partial J}{\partial b}&=\frac1m\sum_{i=1}^{m}(p_i-y_i).
-\end{aligned}}
+\end{aligned}
 \end{equation}
 对应的梯度下降更新为
 \begin{equation}\label{eq:logistic-update}

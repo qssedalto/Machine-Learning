@@ -1,39 +1,43 @@
 % !TeX program = xelatex
 % !TeX encoding = UTF-8
-\documentclass{ctexart}
+\documentclass[UTF8,a4paper,12pt]{ctexart}
 \input{config/preamble}
 
-\title{机器学习}
+\title{机器学习\\[3pt]\large 统计学习理论、优化方法与数值验证}
 \author{天国\quad 付}
 \date{2026年11月}
 
 \begin{document}
+\pagenumbering{roman}
 \maketitle
 \thispagestyle{plain}
 
 \begin{abstract}
-本文系统介绍机器学习的基本概念、线性回归与最小二乘估计、梯度下降法、逻辑回归、模型评价与泛化，并在此基础上讨论正则化与模型选择、决策树、Bagging 与随机森林、Boosting 与 AdaBoost，以及支持向量机。各章从直观问题出发，通过数学定义、关键推导和算法原理说明主要模型的成立条件与局限性。全文保持十个核心主题的连贯结构，强调统计学习中的训练目标、模型复杂度和泛化性能之间的联系。
+本文围绕有限样本条件下的监督学习问题，系统归纳模型空间、损失函数、参数估计、数值优化与泛化评价之间的联系。以经验风险最小化为基本框架，讨论线性回归、梯度下降、逻辑回归、正则化、决策树、随机森林、AdaBoost 及支持向量机的数学结构、最优性条件和适用范围。在构造数据上，通过最小二乘估计、梯度更新、中心差分与多项式回归实验验证部分理论结论。固定随机种子的多项式实验表明，模型复杂度增加可降低训练误差，但测试误差未必同步下降。本文旨在形成从理论建模、算法求解到独立评价的连贯分析框架，并明确现有数值验证的范围与局限。
 \end{abstract}
-\noindent\textbf{关键词：}机器学习；最小二乘；梯度下降；逻辑回归；正则化；决策树；随机森林；AdaBoost；支持向量机；泛化能力
+\noindent\textbf{关键词：}统计学习；经验风险；数值优化；正则化；集成学习；支持向量机；泛化误差
 
-\setcounter{tocdepth}{1}
+\clearpage
+\setcounter{tocdepth}{2}
 \tableofcontents
 \clearpage
+\pagenumbering{arabic}
 
+\input{chapters/introduction}
+\input{appendices/notation}
 \input{chapters/foundations}
 \input{chapters/least_squares}
 \input{chapters/gradient_methods}
 \input{chapters/logistic_regression}
 \input{chapters/generalization}
-
 \input{chapters/regularization}
 \input{chapters/decision_trees}
 \input{chapters/random_forest}
 \input{chapters/adaboost}
 \input{chapters/support_vector_machines}
+\input{chapters/experiments}
+\input{chapters/conclusion}
 
-\appendix
-\input{appendices/notation}
-
+\clearpage
 \printbibliography[heading=bibintoc,title={参考文献}]
 \end{document}

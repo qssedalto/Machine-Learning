@@ -1,17 +1,15 @@
 \section{机器学习基础}\label{ch:foundations}
 
-\subsection{机器学习的基本思想}
+\subsection{统计学习的基本框架}
 
 传统程序设计与机器学习的区别，在于预测规则是如何获得的。传统程序通常由开发者直接规定输入与输出的关系；机器学习则先规定模型可以采用的形式、评价好坏的准则和学习过程，再利用观测数据确定具体规则。训练完成的模型仍然是一个能够被计算机执行的函数，只不过其中的参数由数据估计，而不是人工逐项指定。
 
 从统计学角度看，样本是对现实总体的有限观测，模型是对未知规律的近似表达。数据来自什么群体、如何采集、是否存在选择偏差，都会影响学习结果。机器学习无法自动恢复数据中没有包含的信息，即使优化算法能够找到精确的训练最优解，也不意味着模型必然了解总体规律。
 
-如果需要判断一个西瓜是不是好瓜，最直接的办法是提前写出规则，例如“色泽青绿且敲声浊响就判为好瓜”。但规则是谁给计算机的？是程序员。现实情况可能远比一两条规则复杂：同样的颜色可能对应不同结果，根蒂、纹理等信息也会影响判断。
-
-另一种方法是先收集已经知道结果的样本，让程序从这些样本中建立预测规则。机器学习研究的正是如何利用已有数据，得到能对新数据进行预测或分析的模型。这里的关键不是“让计算机记住答案”，而是希望它学到能够用于未见数据的规律。
+以果实品质分类为例，固定规则依赖人工预设的特征组合，而监督学习通过已标记样本估计预测函数。两者的关键差异在于规则的确定方式。表\ref{tab:watermelon}给出用于说明特征与标签关系的构造数据；其目的仅为阐释建模过程，不构成真实农业数据。
 
 \begin{table}[htbp]\centering
-\caption{为了说明概念而构造的西瓜样本}
+\caption{果实品质分类的构造样本}\label{tab:watermelon}
 \begin{tabular}{llll}\toprule
 色泽&根蒂&敲声&已知结果\\\midrule
 青绿&蜷缩&浊响&好瓜\\
@@ -24,45 +22,49 @@
 
 观测对象与特征是两个不同层次的概念。一个学生是观测对象，学习时间、出勤率和基础成绩则是描述这个对象的变量。增加特征可能提供更多有用信息，但也可能引入噪声或冗余。实际建模时，还应确认预测发生时这些特征是否已经可用。例如将考试之后才产生的信息用于考前成绩预测，就会造成数据泄漏。同一个变量也可以在不同研究任务中分别充当特征和响应变量。
 
-先换成更容易用数学表达的例子：根据每天的学习时间预测成绩。假设记录了四名学生：
-\begin{center}
+以学习时间与成绩的构造数据说明回归任务中观测对象、特征及响应变量的对应关系。
+相关内容汇总于表\ref{tab:foundation-samples}。
+\begin{table}[htbp]\centering
+\caption{回归任务的构造样本}\label{tab:foundation-samples}
 \begin{tabular}{ccc}\toprule
 学生&学习时间 $x$（小时）&成绩 $y$（分）\\\midrule
 A&1&60\\ B&2&70\\ C&3&80\\ D&4&90\\\bottomrule
 \end{tabular}
-\end{center}
+\end{table}
 每一行叫作一个\textbf{样本}；学习时间是用于预测的\textbf{特征}（输入 $x$）；已知成绩是\textbf{标记}或响应变量（输出 $y$）。
 
 若有 $m$ 个样本，就可将训练数据写为
 \begin{equation}\label{eq:dataset}
-\boxed{D=\{(x_i,y_i)\}_{i=1}^{m}.}
+D=\{(x_i,y_i)\}_{i=1}^{m}.
 \end{equation}
-$i$ 表示第几个样本，而非指数。如果每个样本包含 $d$ 个数值特征，如学习时间、出勤率和作业得分，则输入变成列向量
+下标 $i$ 表示样本索引。如果每个样本包含 $d$ 个数值特征，如学习时间、出勤率和作业得分，则输入变成列向量
 \[
 \boldsymbol{x}_i=(x_{i1},x_{i2},\ldots,x_{id})^{\mathsf T}\in\mathbb R^d.
 \]
 
-\subsection{学习任务的基本分类}
+\subsection{学习任务与目标变量类型}
 
 \textbf{监督学习}的训练样本提供了待预测的正确结果。例如已有学习时间和真实成绩，便可以训练成绩预测模型。\textbf{无监督学习}通常没有这样的目标标记，算法可能根据学习时间与娱乐时间等信息把学生分组；聚类就是一种典型任务。所谓“无监督”不是“没有数据”，而是没有提供任务对应的目标标记。
 
 监督学习常见两种任务：
-\begin{center}
+相关内容汇总于表\ref{tab:learning-tasks}。
+\begin{table}[htbp]\centering
+\caption{监督学习任务类型比较}\label{tab:learning-tasks}
 \begin{tabular}{lll}\toprule
 任务&预测目标&例子\\\midrule
 回归（Regression）&连续数值&房价、气温、成绩\\
 分类（Classification）&离散类别&邮件是否为垃圾邮件\\\bottomrule
 \end{tabular}
-\end{center}
+\end{table}
 这是按\textbf{预测目标}划分任务，而不是按程序使用了哪种求解器划分。
 
-\subsection{模型、参数、策略与算法}
+\subsection{模型空间、学习准则与求解算法}
 
 理解这三个层次能够避免把模型与求解算法混为一谈。线性回归规定预测函数的形式，平方损失规定什么样的预测值得选择，而正规方程与梯度下降是求解参数的不同途径。两种算法可能得到同一个模型；反过来，同一种梯度下降算法也能训练不同类型的模型。学习率、正则化强度等由训练者选择的量通常称为超参数，与直接从训练数据中估计得到的模型参数有所区别。
 
 假设先使用一条过原点的直线预测：
 \begin{equation}\label{eq:model-no-intercept}
-\boxed{\hat y=wx.}
+\hat y=wx.
 \end{equation}
 $\hat y$ 表示预测值；$x$ 是输入；$w$ 是\textbf{模型参数}，决定直线的斜率及预测规则。
 
@@ -74,21 +76,21 @@ $\hat y$ 表示预测值；$x$ 是输入；$w$ 是\textbf{模型参数}，决定
 \begin{equation}\label{eq:linear-family}
 \mathcal F=\{f_{w,b}(x)=wx+b\mid w,b\in\mathbb R\}.
 \end{equation}
-\textbf{模型族}告诉我们允许使用什么形式的函数；\textbf{参数}决定最终是哪一条直线；\textbf{算法}负责从数据中寻找合适参数。
+\textbf{模型族}规定可采用的函数形式；\textbf{参数}决定最终是哪一条直线；\textbf{算法}负责从数据中寻找合适参数。
 
 李航《统计学习方法》常用“模型—策略—算法”概括这件事：\emph{模型}规定学什么，\emph{策略}规定什么算好，\emph{算法}规定怎么求出来\cite[第1章]{lihang2019}。
 
-\subsection{预测误差与损失函数}
+\subsection{预测误差及损失函数}
 
 单个样本的预测误差可写成 $e_i=\hat y_i-y_i$；仅将误差直接相加可能发生正负抵消，因此常把误差平方，定义\textbf{平方损失}
 \begin{equation}\label{eq:squared-loss}
-\boxed{L(y_i,\hat y_i)=(y_i-\hat y_i)^2.}
+L(y_i,\hat y_i)=(y_i-\hat y_i)^2.
 \end{equation}
 平方使较大的误差受到更大惩罚，但也意味着这种方法对离群值可能较敏感。
 
 将所有样本的平方损失求平均，得到\textbf{均方误差}（MSE）：
 \begin{equation}\label{eq:intro-mse}
-\boxed{\operatorname{MSE}(w)=\frac1m\sum_{i=1}^{m}(wx_i-y_i)^2.}
+\operatorname{MSE}(w)=\frac1m\sum_{i=1}^{m}(wx_i-y_i)^2.
 \end{equation}
 \textbf{辨别三个量：}$L$ 衡量一个样本；MSE 衡量这批样本的平均平方误差；$w$ 是使误差发生变化、等待求解的参数。
 
@@ -113,7 +115,7 @@ $\min J$ 表示最小目标值，$\argmin J$ 表示使目标取得最小值的�
 \hat f\in\argmin_{f\in\mathcal F}\widehat R_D(f).
 \end{equation}
 
-\subsection{训练误差与泛化能力}
+\subsection{训练风险与总体风险}
 
 不同模型可以在训练样本上具有相同的拟合误差，却对未见数据给出不同预测。\textbf{相同的训练误差并不意味着相同的泛化性能。}因此模型评价必须关注独立数据。
 
@@ -121,4 +123,4 @@ $\min J$ 表示最小目标值，$\argmin J$ 表示使目标取得最小值的�
 \begin{equation}\label{eq:population-risk}
 R(f)=\mathbb E_{(X,Y)\sim P_{X,Y}}[L(Y,f(X))].
 \end{equation}
-当前不要求直接计算这条式子。$\mathbb E$ 表示按目标数据分布求期望；它与把固定训练集上若干损失直接求平均不同。真实数据分布通常未知，因此我们会用独立测试数据估计预测表现。
+$\mathbb E$ 表示按目标数据分布求期望；它与把固定训练集上若干损失直接求平均不同。真实数据分布通常未知，因此可使用独立测试数据估计预测表现。

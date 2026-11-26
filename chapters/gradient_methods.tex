@@ -1,6 +1,6 @@
 \section{梯度下降法}\label{ch:gradient}
 
-\subsection{梯度下降的基本思想}
+\subsection{梯度下降的优化原理}
 
 很多优化问题能够计算任意参数对应的损失，却无法直接写出最优参数的解析表达式。可以把目标函数想象成参数空间中的地形，当前参数是地形中的位置，梯度提供附近地形的倾斜信息。算法不必预先知道最低点在哪里，而是根据当前位置选择下降方向，迈出一步，然后重新计算局部信息。
 
@@ -31,6 +31,7 @@ $\eta$ 是\textbf{学习率}，控制每次更新的步长。减去导数意味�
 \subsection{迭代过程与下降轨迹}
 
 重复应用梯度更新公式，便得到一系列参数迭代点。下图展示二次目标函数上的下降轨迹；实际计算可交由数值优化程序完成。
+相关几何结构或函数性质见图\ref{fig:quadratic-objective}。
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}
 \begin{axis}[width=.76\textwidth,height=6cm,xlabel={$x$},ylabel={$f(x)$},xmin=0.6,xmax=4.6,ymin=-.1,ymax=5.2,grid=major,grid style={draw=gray!15},tick align=outside]
@@ -42,20 +43,20 @@ $\eta$ 是\textbf{学习率}，控制每次更新的步长。减去导数意味�
 \caption{从 $x_0=1$ 出发，学习率取 $0.2$ 的几次梯度下降迭代。}\label{fig:quadratic-objective}
 \end{figure}
 
-\subsection{从导数到梯度}
+\subsection{多参数梯度与同步更新}
 
 梯度的每个分量描述沿某个坐标方向的局部变化率；沿单位方向的一阶方向导数等于梯度与该方向的内积。根据柯西不等式，在欧氏度量下，负梯度方向使该内积最小，所以它是局部一阶意义上的最速下降方向。这里强调局部和一阶：如果步子迈得很远，函数曲率可能使原来的下降方向不再适合。
 
-刚才只有一个变量 $x$。线性回归有两个参数 $w,b$，损失函数是 $J(w,b)$。我们分别求偏导
+一元优化问题仅涉及标量参数 $x$。线性回归有两个参数 $w,b$，损失函数是 $J(w,b)$。分别对两个参数求偏导
 \[
 \frac{\partial J}{\partial w},\qquad \frac{\partial J}{\partial b}.
 \]
 将两个偏导数按参数 $(w,b)$ 的顺序排列，得到目标函数关于参数向量的\textbf{梯度}。其中 $\partial J/\partial w$ 表示固定 $b$ 时 $J$ 随 $w$ 的变化率，$\partial J/\partial b$ 表示固定 $w$ 时 $J$ 随 $b$ 的变化率，两者均在同一个参数点 $(w,b)$ 处计算：
 \begin{equation}\label{eq:gradient-two}
-\boxed{\nabla J(w,b)=
+\nabla J(w,b)=
 \begin{pmatrix}
 \partial J/\partial w\\[2pt]\partial J/\partial b
-\end{pmatrix}.}
+\end{pmatrix}.
 \end{equation}
 
 因此，同时更新两个参数的规则是
@@ -75,10 +76,10 @@ J(w,b)=\frac1{2m}\sum_{i=1}^{m}(wx_i+b-y_i)^2.
 \]
 利用复合函数求导法则：
 \begin{equation}\label{eq:gd-lm-partials}
-\boxed{\begin{aligned}
+\begin{aligned}
 \frac{\partial J}{\partial w}&=\frac1m\sum_{i=1}^{m}(wx_i+b-y_i)x_i,\\
 \frac{\partial J}{\partial b}&=\frac1m\sum_{i=1}^{m}(wx_i+b-y_i).
-\end{aligned}}
+\end{aligned}
 \end{equation}
 两式中的 $wx_i+b-y_i$ 均为第 $i$ 个样本的预测值减真实值。由于 $\partial(wx_i+b-y_i)/\partial w=x_i$，对 $w$ 求偏导时每一项还需乘以 $x_i$；由于 $\partial(wx_i+b-y_i)/\partial b=1$，对 $b$ 求偏导时不需要这一因子。最后对各样本的结果求平均。
 
@@ -88,7 +89,7 @@ J(w,b)=\frac1{2m}\sum_{i=1}^{m}(wx_i+b-y_i)^2.
 
 学习率太小，每次只走一点，训练可能很慢。学习率太大，可能从最小值一侧跳到另一侧，甚至越走越远。\textbf{负梯度提供局部下降方向，并不保证使用任何学习率都能下降。}
 
-还可以对刚才的一元二次函数做一个简单检查：
+对于前述一元二次目标，迭代误差满足：
 \[
 x_{k+1}-3=(1-2\eta)(x_k-3).
 \]
@@ -100,7 +101,7 @@ x_{k+1}-3=(1-2\eta)(x_k-3).
 
 当参数很多时，把它们记成向量 $\boldsymbol\theta$，就可以将所有偏导同时更新写作
 \[
-\boxed{\boldsymbol\theta_{k+1}
-=\boldsymbol\theta_k-\eta_k\nabla J(\boldsymbol\theta_k).}
+\boldsymbol\theta_{k+1}
+=\boldsymbol\theta_k-\eta_k\nabla J(\boldsymbol\theta_k).
 \]
 如果 $J$ 是凸可微函数，一个梯度为零的点是全局极小点；但一般非凸函数并没有这样的保证。关于高维步长、曲率、收敛速度的更严格结论属于进阶优化理论，本课不把它们当作入门要求。

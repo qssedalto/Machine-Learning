@@ -24,3 +24,6 @@ print("Analytic LS :", beta_lstsq)
 print("Gradient GD :", beta)
 print("MSE         :", mse)
 print("Exact MSE   :", 1 / 18)
+
+assert np.allclose(beta, beta_lstsq, rtol=0.0, atol=1e-7)
+assert np.isclose(mse, 1 / 18, rtol=0.0, atol=1e-10)

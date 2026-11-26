@@ -26,3 +26,5 @@ analytic = analytic_gradient(beta)
 print("Analytic gradient :", analytic)
 print("Numerical gradient:", numerical)
 print("Max abs difference:", np.max(np.abs(analytic - numerical)))
+
+assert np.max(np.abs(analytic - numerical)) < 1e-7
