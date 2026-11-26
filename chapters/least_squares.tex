@@ -6,14 +6,7 @@
 
 在统计建模中，可以把线性关系理解为条件均值的近似，未被模型解释的波动交给随机误差。最小二乘本身是一种确定系数的准则，并不要求误差服从正态分布。若进一步讨论参数的置信区间、显著性检验与估计量性质，则需要另行说明统计假设。回归系数所表达的统计关联也不能直接被解释为因果效应。
 
-以上的三组数据恰好满足 $y=2x$，训练误差可以达到零。现实数据往往并不这样整齐。考虑四组数据：
-\begin{center}
-\begin{tabular}{ccc}\toprule
-学生&学习时间 $x$（小时）&成绩 $y$（教学数值）\\\midrule
-A&1&2\\ B&2&3\\ C&3&5\\ D&4&4\\\bottomrule
-\end{tabular}
-\end{center}
-如果用一条直线近似这些点，哪条直线算“最好”？线性回归提供函数形式，最小二乘法提供选择直线参数的准则。这里的成绩是人工数据，并不是实际考试成绩。
+最小二乘法通过最小化残差平方和选择线性模型的参数。
 
 \subsection{一元线性模型与参数}
 
@@ -23,8 +16,6 @@ A&1&2\\ B&2&3\\ C&3&5\\ D&4&4\\\bottomrule
 \end{equation}
 $x_i$ 是第 $i$ 个输入，$y_i$ 是真实结果，$\hat y_i$ 是预测结果；$w$ 是斜率（权重），$b$ 是截距（偏置）。输入和真实结果属于数据，\textbf{$w,b$ 才是需要由训练确定的参数}。
 
-例如随手选择 $w=1,b=1$，模型就是 $\hat y=x+1$。当 $x=3$ 时预测为 $4$，而样本真实结果是 $5$。这说明需要有一套评价参数好坏的规则。
-
 \subsection{残差、平方和与均方误差}
 
 残差是已观测响应值与拟合值之差，而随机误差是理论数据生成模型中的不可观测成分，两者不能混用。平方损失使较大的偏差受到更强惩罚，也意味着少数极端观测可能对拟合直线产生较大影响。如果任务中存在大量异常值，可以考虑绝对误差等稳健损失，但它们不再对应同一个普通最小二乘问题。
@@ -33,17 +24,7 @@ $x_i$ 是第 $i$ 个输入，$y_i$ 是真实结果，$\hat y_i$ 是预测结果�
 \begin{equation}\label{eq:linear-residual}
 e_i=y_i-\hat y_i=y_i-(wx_i+b).
 \end{equation}
-在 $w=1,b=1$ 的情况下，四个样本有
-\begin{center}
-\begin{tabular}{rrrr}\toprule
-$x_i$&$y_i$&$\hat y_i$&$e_i$\\\midrule
-1&2&2&0\\
-2&3&3&0\\
-3&5&4&1\\
-4&4&5&$-1$\\\bottomrule
-\end{tabular}
-\end{center}
-残差相加得到 $0+0+1-1=0$，但模型显然没有预测对全部样本。为了避免正负抵消，使用残差平方和（RSS）衡量整体拟合误差：
+残差直接求和可能发生正负抵消，因此使用残差平方和（RSS）衡量整体拟合误差：
 \begin{equation}\label{eq:linear-rss}
 \operatorname{RSS}(w,b)=\sum_{i=1}^{n}(y_i-wx_i-b)^2.
 \end{equation}
@@ -51,7 +32,7 @@ $x_i$&$y_i$&$\hat y_i$&$e_i$\\\midrule
 \begin{equation}\label{eq:linear-mse}
 \boxed{\operatorname{MSE}(w,b)=\frac1n\sum_{i=1}^{n}(wx_i+b-y_i)^2.}
 \end{equation}
-对于这四条数据，当前 $\operatorname{MSE}=(0+0+1+1)/4=0.5$。最小二乘法要求找到 $w,b$，使 RSS（等价地，使 MSE）最小。
+最小二乘法要求找到使 RSS（等价地，使 MSE）最小的参数。
 
 \subsection{训练目标函数的缩放}
 
@@ -59,7 +40,7 @@ $x_i$&$y_i$&$\hat y_i$&$e_i$\\\midrule
 \begin{equation}\label{eq:linear-objective}
 \boxed{J(w,b)=\frac1{2n}\sum_{i=1}^{n}(wx_i+b-y_i)^2.}
 \end{equation}
-它和 MSE 相比多乘了 $1/2$：$\operatorname{MSE}=2J$。例如，前面临时取 $w=1,b=1$ 时，MSE 为 $0.5$，对应的 $J$ 就是 $0.25$。如果另取参数使 MSE 降到 $0.45$，则对应 $J=0.225$。无论比较 MSE 还是 $J$，参数的优劣次序都没有改变。\textbf{数值不同，但取到最小值的 $w,b$ 完全相同。}加上 $1/2$ 只是为了消掉平方求导产生的系数 $2$。不能把 $J$ 的数值直接称为 MSE。
+它和 MSE 相比多乘了 $1/2$：$\operatorname{MSE}=2J$。\textbf{数值不同，但取得最小值的参数完全相同。}系数 $1/2$ 用于抵消平方求导产生的系数 $2$，不能把 $J$ 的数值直接称为 MSE。
 
 现在要解决的问题可以写成
 \[
@@ -114,38 +95,7 @@ w\sum_{i=1}^{n}(x_i-\bar x)^2
 \hat b=\bar y-\hat w\bar x.
 }
 \end{equation}
-回到开头的样本，先求均值：
-\[
-\bar x=\frac{1+2+3+4}{4}=2.5,\qquad
-\bar y=\frac{2+3+5+4}{4}=3.5.
-\]
-然后列一个表核对斜率的分子和分母：
-\begin{center}
-\begin{tabular}{rrrr}\toprule
-$x_i-\bar x$&$y_i-\bar y$&两者乘积&$(x_i-\bar x)^2$\\\midrule
-$-1.5$&$-1.5$&2.25&2.25\\
-$-0.5$&$-0.5$&0.25&0.25\\
-0.5&1.5&0.75&0.25\\
-1.5&0.5&0.75&2.25\\\midrule
-&合计&4&5\\\bottomrule
-\end{tabular}
-\end{center}
-因此
-\[
-\hat w=\frac45=0.8,\qquad
-\hat b=3.5-0.8\times2.5=1.5.
-\]
-最终拟合直线为
-\begin{equation}\label{eq:ols-hand-result}
-\boxed{\hat y=0.8x+1.5.}
-\end{equation}
-在四个训练点上，其预测值分别为 $2.3,3.1,3.9,4.7$；平方误差为 $0.09,0.01,1.21,0.49$。故
-\[
-\boxed{\operatorname{MSE}=\frac{0.09+0.01+1.21+0.49}{4}=0.45.}
-\]
-和刚才的 $w=1,b=1$ 时的 $0.5$ 相比，训练误差确实降低了。
-
-若代入新输入 $x=5$，预测 $\hat y=0.8\times5+1.5=5.5$。它是\emph{模型给出的数学预测}，不是真实成绩；而且 $5$ 超出了训练输入的范围 $[1,4]$，这种预测属于\textbf{外推}，需要格外谨慎。
+拟合完成后，可利用模型预测新观测。若新输入超出训练数据的取值范围，预测属于\textbf{外推}，应谨慎解释。
 
 \subsection{最优解的存在与唯一性}
 

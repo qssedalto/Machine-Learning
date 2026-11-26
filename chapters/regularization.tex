@@ -4,16 +4,11 @@
 
 正则化为模型选择增加了一种归纳偏好：当若干候选模型的训练拟合表现相近时，优先考虑某些结构更简单或参数更稳定的模型。简单的具体含义取决于惩罚函数，例如岭回归偏好幅度较小的系数，Lasso 则可能产生精确为零的系数。这样的偏好可能牺牲部分训练拟合效果，却有机会降低模型对有限样本中偶然波动的敏感程度。
 
-第\ref{ch:generalization}节说明：模型在训练样本上误差很小，并不保证在新样本上预测准确。例如，给定学习时间 $x=1,2,3,4,5$ 与成绩 $y=60,65,70,75,80$，直线 $\hat y=5x+55$ 可以完全拟合训练数据。但若采用次数更高的多项式，也可能达到同样的零训练误差，却在未见数据上作出很不相同的预测。因此，除了拟合训练数据，我们还希望模型不要无谓地复杂。
+第\ref{ch:generalization}节说明：模型在训练样本上误差很小，并不保证在新样本上预测准确。因此，除了拟合训练数据，我们还希望模型不要无谓地复杂。
 
 一种常见的建模策略是\textbf{正则化}（Regularization）：在原有训练损失之外加入对参数复杂程度的惩罚。它不是简单地认定“系数越小，模型越正确”，而是在拟合误差和模型复杂程度之间做出明确的权衡\cite[第11章]{zhou2016}。
 
-假设两个候选模型的训练误差相等，系数向量分别为
-\[
-\boldsymbol w_A=(1,2)^{\mathsf T},\qquad
-\boldsymbol w_B=(5,10)^{\mathsf T}.
-\]
-若使用系数平方和衡量复杂程度，则 $\|\boldsymbol w_A\|_2^2=1^2+2^2=5$，而 $\|\boldsymbol w_B\|_2^2=5^2+10^2=125$。在这一特定准则下，模型 A 所受惩罚较小。但不同特征的量纲会影响系数数值，所以实际比较之前通常需要适当标准化特征。
+使用系数范数衡量复杂度时，应注意特征的量纲会影响惩罚的相对强度，因此通常需要适当标准化特征。
 
 \subsection{从普通最小二乘到正则化目标}
 
@@ -31,40 +26,15 @@ J_{\mathrm{OLS}}(w,b)=\frac1{2n}\sum_{i=1}^{n}(y_i-wx_i-b)^2.
 \end{equation}
 $\lambda$ 是事先选择的\textbf{超参数}，决定惩罚的强度；$w,b$ 才是通过训练求解的参数。这里沿用通常不惩罚截距 $b$ 的约定。当 $\lambda=0$ 时退回普通最小二乘；在数据项保持不变的比较中，$\lambda$ 越大，大系数所付的代价越高。
 
-例如两个样本的真实值为 $5,8$，预测值为 $4,6$，则数据拟合项为
-\[
-J_{\mathrm{error}}=\frac1{2\times2}\big[(5-4)^2+(8-6)^2\big]=1.25.
-\]
-若这组参数满足 $w=4$ 且选择 $\lambda=1$，则总目标为
-\[
-J_{\mathrm{Ridge}}=1.25+\frac12\times4^2=\boxed{9.25}.
-\]
-\textbf{注意：}该数值是包含惩罚项的训练目标，不等于 MSE，也不能直接当作测试误差。
+\textbf{注意：}含惩罚项的训练目标不等于 MSE，也不能直接当作测试误差。
 
-\subsection{手工推导岭回归的参数收缩}
+\subsection{岭回归的参数收缩}
 
-考虑已中心化且无截距的两个教学样本 $(x_1,y_1)=(1,3)$、$(x_2,y_2)=(-1,-3)$，模型取 $\hat y=wx$。普通最小二乘的最优参数为 $w_{\mathrm{OLS}}=3$。加入正则化后，
-\begin{align}
-J(w)
-&=\frac14\big[(3-w)^2+(-3+w)^2\big]+\frac{\lambda}{2}w^2\notag\\
-&=\frac12(3-w)^2+\frac{\lambda}{2}w^2.\label{eq:ridge-hand-objective}
-\end{align}
-先求导：
+对于中心化的单特征数据，且不含截距，岭回归的解析解为
 \[
-J'(w)=-(3-w)+\lambda w=(1+\lambda)w-3.
+\hat w_\lambda=\frac{\sum_i x_i y_i}{\sum_i x_i^2+n\lambda}.
 \]
-令导数为零，得到
-\begin{equation}\label{eq:ridge-hand-solution}
-\boxed{w^*=\frac{3}{1+\lambda}.}
-\end{equation}
-由于 $J''(w)=1+\lambda>0$，这一驻点是唯一的全局最小点。代入不同的正则化强度，得到
-\begin{center}
-\begin{tabular}{rrrrrr}\toprule
-$\lambda$&0&0.5&1&2&5\\\midrule
-$w^*$&3&2&1.5&1&0.5\\\bottomrule
-\end{tabular}
-\end{center}
-在\emph{这个单变量例子}中，$\lambda$ 增大会使系数逐渐接近零。不能由此断言在一般多特征岭回归中，每一个系数的绝对值都必然随 $\lambda$ 单调减小；当特征相关时，系数可能相互补偿。
+当特征具有非零方差时，增加 $\lambda$ 会使单变量岭回归系数趋近零。一般多特征情形中，由于特征之间可能相关，不能保证每个系数的绝对值都单调减小。
 
 \subsection{多特征岭回归及其矩阵形式}
 
@@ -107,7 +77,7 @@ Lasso 与岭回归的关键区别来自惩罚函数在零附近的几何性质�
 \lambda\|\boldsymbol w\|_1,\quad
 \|\boldsymbol w\|_1=\sum_{j=1}^{p}|w_j|.}
 \end{equation}
-例如 $\boldsymbol w=(1,-2,3)^{\mathsf T}$，则 $\|\boldsymbol w\|_2^2=14$，而 $\|\boldsymbol w\|_1=6$。L2 与 L1 惩罚所用的量并不相同，不能只比较这两个数值的大小来判定哪个算法更好。
+L2 与 L1 惩罚所用的量并不相同，不能仅比较惩罚数值来判断算法优劣。
 
 \begin{center}
 \begin{tabularx}{\textwidth}{p{28mm}XX}\toprule
@@ -119,15 +89,11 @@ Lasso 与岭回归的关键区别来自惩罚函数在零附近的几何性质�
 \end{tabularx}
 \end{center}
 
-为什么 Lasso 可能出现精确的零？仍以先前的单参数样本为例，其目标为
+Lasso 的最优性条件可用次梯度表示。令 $J_{\mathrm{fit}}$ 为数据拟合项，则
 \[
-J_{\mathrm{Lasso}}(w)=\frac12(3-w)^2+\lambda|w|.
+0\in \nabla J_{\mathrm{fit}}(\hat{\boldsymbol w})+\lambda\partial\|\hat{\boldsymbol w}\|_1.
 \]
-当 $w>0$ 时，一阶条件是 $w-3+\lambda=0$，得到 $w=3-\lambda$；当 $w<0$ 时，一阶条件给出 $w=3+\lambda>0$，与 $w<0$ 矛盾。结合 $w=0$ 处的最优性条件，可得
-\begin{equation}\label{eq:lasso-soft-example}
-\boxed{w_{\mathrm{Lasso}}^*=\max(3-\lambda,0),\qquad\lambda\geq0.}
-\end{equation}
-因此当 $\lambda\geq3$ 时系数恰好为零。这个单参数推导说明 L1 惩罚具有产生稀疏解的机制；多特征问题的求解需要考虑各参数及特征的相互作用。
+由于绝对值函数在零点的次梯度为 $[-1,1]$，当某一坐标的拟合梯度绝对值不超过 $\lambda$ 时，零系数能够满足该坐标的最优性条件。这是 Lasso 产生稀疏解的机制。
 
 \subsection{如何选择正则化强度}
 

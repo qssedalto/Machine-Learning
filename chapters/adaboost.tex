@@ -36,8 +36,6 @@ w_{1,i}=\frac1n,\qquad \sum_{i=1}^{n}w_{m,i}=1.
 \end{equation}
 其中指示函数 $\mathbf1\{\cdot\}$ 在条件成立时为 $1$，否则为 $0$。普通错误率只看错分样本的个数，加权错误率还关心错分样本目前所占的权重。
 
-例如有五个样本，最初每个权重为 $0.2$，若某一分类器仅把第五个样本分错，那么加权错误率 $\varepsilon_1=0.2$。接下来应当给这一轮的分类器多大的投票权重？
-
 \subsection{从指数损失推导分类器权重}
 
 指数损失的特点是对负间隔样本产生迅速增大的代价，对具有较大正间隔的样本产生较小代价。当新的分类器能够正确判断较多当前重要的样本时，它应获得较大的组合权重；如果仅达到随机猜测水平，就没有明显理由给予正向投票贡献。下面的数学推导将这一判断转化为明确的优化准则。
@@ -62,7 +60,7 @@ J'(\alpha)=-(1-\varepsilon_m)e^{-\alpha}
 \end{equation}
 当 $0<\varepsilon_m<1$ 时，$J''(\alpha)=(1-\varepsilon_m)e^{-\alpha}+\varepsilon_m e^\alpha>0$，所以该驻点是唯一全局最小点。
 
-式\eqref{eq:adaboost-alpha}表明：当 $\varepsilon_m=0.2$，有 $\alpha_m=\frac12\ln4\approx0.6931$；当 $\varepsilon_m=0.5$ 时，$\alpha_m=0$，表示该学习器没有正向投票贡献。若 $\varepsilon_m>0.5$，计算得到负权重；标准二分类 AdaBoost 通常要求本轮基学习器优于随机猜测，必要时翻转预测或停止本轮训练。当 $\varepsilon_m=0$ 时，公式趋于无穷大，实际训练通常单独处理完美分类器并终止。
+式\eqref{eq:adaboost-alpha}表明：当 $\varepsilon_m=0.5$ 时，$\alpha_m=0$，该学习器没有正向投票贡献；若 $\varepsilon_m>0.5$，权重为负。标准二分类 AdaBoost 通常要求本轮基学习器优于随机猜测，必要时翻转预测或停止本轮训练。当 $\varepsilon_m=0$ 时，公式趋于无穷大，实际训练通常单独处理完美分类器并终止。
 
 \subsection{样本权重的更新公式}
 
@@ -81,38 +79,6 @@ Z_m=\sum_{i=1}^{n}w_{m,i}
 \exp[-\alpha_m y_i h_m(\boldsymbol x_i)]
 \end{equation}
 是使新权重之和等于 $1$ 的归一化因子。分类正确的样本在归一化前乘以 $e^{-\alpha_m}$，分类错误的样本乘以 $e^{\alpha_m}$。因此，\textbf{被错分样本相对于正确样本的权重会上升}。
-
-\subsection{手工计算一次权重调整}
-
-回到五个等权样本的例子，前四个分类正确、第五个分类错误。初始权重都是 $0.2$，加权错误率为 $0.2$。首先算分类器权重：
-\[
-\alpha_1=\frac12\ln\frac{0.8}{0.2}
-=\frac12\ln4\approx0.6931.
-\]
-因此 $e^{\alpha_1}=2$、$e^{-\alpha_1}=0.5$，归一化因子为
-\[
-Z_1=0.8\times0.5+0.2\times2
-=\boxed{0.8}.
-\]
-对每个正确样本，新权重是
-\[
-w_{\mathrm{correct}}=\frac{0.2\times0.5}{0.8}
-=\boxed{0.125};
-\]
-而错分样本的新权重是
-\[
-w_{\mathrm{wrong}}=\frac{0.2\times2}{0.8}
-=\boxed{0.5}.
-\]
-\begin{center}
-\begin{tabular}{lccccc}\toprule
-样本&A&B&C&D&E\\\midrule
-首轮权重&0.200&0.200&0.200&0.200&0.200\\
-分类情况&正确&正确&正确&正确&错误\\
-次轮权重&0.125&0.125&0.125&0.125&0.500\\\bottomrule
-\end{tabular}
-\end{center}
-新权重相加为 $4\times0.125+0.5=1$，可直接核对归一化结果。第五个样本从总体权重的 $20\%$ 升至 $50\%$，所以下一轮的弱学习器会更加关注它。这一例子同时解释了\textbf{分类器权重}和\textbf{样本权重}的不同作用：前者用于最终组合，后者用于后续训练。
 
 \subsection{指数损失、前向分步与局限性}
 

@@ -1,13 +1,10 @@
 \section{Python 数值实验}\label{ch:experiments}
 
-前面五课都是先通过手算理解，再逐渐引入通用记号。现在使用 Python 把一些计算重复很多次，并核对结果。所有示例都可以从仓库根目录运行。先执行 \texttt{python -m pip install -r requirements.txt} 安装 NumPy。
+本节使用 Python 实现前文的损失函数、参数估计与优化算法。所有示例均可从仓库根目录运行，先执行 \texttt{python -m pip install -r requirements.txt} 安装依赖。
 
 \subsection{网格搜索与参数估计}
 
-第一课的三个训练样本是 $(1,2),(2,4),(3,6)$，模型为 $\hat y=wx$。我们知道 $w=2$ 时 MSE 为零。现在不直接用解析公式，而是让计算机枚举 $0$ 到 $4$ 之间的一些候选参数，每次计算
-\[
-J(w)=\frac13\big[(w-2)^2+(2w-4)^2+(3w-6)^2\big].
-\]
+使用三个训练样本 $(1,2),(2,4),(3,6)$，模型为 $\hat y=wx$，程序通过枚举候选参数并比较 MSE 进行网格搜索。
 代码保存在 \texttt{code/grid\_search\_intro.py}：
 \lstinputlisting[caption={从损失函数出发搜索最佳参数},label={lst:grid-search}]{code/grid_search_intro.py}
 
@@ -15,7 +12,7 @@ J(w)=\frac13\big[(w-2)^2+(2w-4)^2+(3w-6)^2\big].
 
 \subsection{最小二乘的 NumPy 实现}
 
-第二课使用四组数据 $(1,2),(2,3),(3,5),(4,4)$。先求 $\bar x,\bar y$，再计算
+采用四组实验数据 $(1,2),(2,3),(3,5),(4,4)$。最小二乘估计公式为
 \[
 \hat w=\frac{\sum_i(x_i-\bar x)(y_i-\bar y)}{\sum_i(x_i-\bar x)^2},
 \qquad
@@ -24,27 +21,22 @@ J(w)=\frac13\big[(w-2)^2+(2w-4)^2+(3w-6)^2\big].
 结果应该是 $\hat w=0.8,\hat b=1.5$，训练 MSE 为 $0.45$。这次不必依赖封装好的回归库：把数学公式直接写成 \texttt{np.mean} 与 \texttt{np.sum}，可以看到每一步对应哪条公式。示例代码：
 \lstinputlisting[caption={直接将最小二乘公式翻译为 NumPy},label={lst:ols-intro}]{code/ordinary_least_squares_intro.py}
 
-仓库另外保留 \texttt{code/linear\_regression\_demo.py}，用于比较最小二乘数值解与梯度下降结果。原有脚本使用另一组数据 $(1,2),(2,3),(3,5)$：这组数据的斜率是 $3/2$、截距是 $1/3$，不是刚才四样本例子的 $0.8$、$1.5$。\textbf{不要混用不同实验的数据和答案。}
+仓库另有 \texttt{code/linear\_regression\_demo.py}，用于比较最小二乘数值解与梯度下降结果，其实验数据与本例不同。
 
 \subsection{梯度下降的程序实现}
 
-第三课已经手算过
+以一元二次函数为数值实验目标：
 \[
 f(x)=(x-3)^2,\qquad x_0=1,\qquad\eta=0.2.
 \]
-第一次更新得到 $x_1=1.8$，之后是 $2.28$、$2.568$ 等。使用一个 \texttt{for} 循环，把“求导 $\rightarrow$ 更新 $\rightarrow$ 计算新函数值”重复即可：
+使用 \texttt{for} 循环重复计算梯度、更新参数和记录目标函数值：
 \lstinputlisting[caption={把一元函数梯度下降写成循环},label={lst:gd-intro}]{code/gradient_descent_intro.py}
 
-在更复杂的线性回归里，循环内部只需改为同时更新 $w,b$。关键是先从旧参数处计算两个偏导，再一起更新。软件重复操作很快，但理解它的最好方式仍是手算第一步。
+在多参数优化中，应基于同一组旧参数计算所有偏导，再同步更新。
 
 \subsection{逻辑回归的梯度更新}
 
-第四课用一个样本 $x=2,y=1$ 演示：
-\[
-w_0=b_0=0,\quad\eta=0.1,\quad
-p_0=\frac1{1+e^0}=0.5.
-\]
-解析梯度为 $\partial_wJ=(p-y)x=-1$ 与 $\partial_bJ=p-y=-0.5$。所以一步更新得 $w_1=0.1,b_1=0.05$，新概率为 $\sigma(0.25)\approx0.5622$：
+采用单样本 $x=2,y=1$，设置初始参数 $w_0=b_0=0$ 与学习率 $\eta=0.1$，由程序计算预测概率、损失梯度与更新后的参数：
 \lstinputlisting[caption={一个样本的逻辑回归梯度更新},label={lst:logit-intro}]{code/logistic_regression_intro.py}
 
 仓库原有的 \texttt{code/logistic\_gradient\_check.py} 则做另一件事：用数值差分近似求导，检查解析梯度的实现是否正确。对某个参数分量 $\beta_j$，中心差分近似为
@@ -62,4 +54,4 @@ p_0=\frac1{1+e^0}=0.5.
 
 为了真正复现，一份实验记录至少需要交代：数据或生成规则、样本数量、训练/验证/测试划分、随机种子、模型形式、损失函数、优化方法、学习率或其他超参数、评价指标、Python 与依赖版本。
 
-\textbf{这部分的主要目标不是堆积代码，而是建立“公式 $\leftrightarrow$ 手工计算 $\leftrightarrow$ Python 结果”的联系。}如果输出与手算不一致，优先核对数据是否相同、分母是 $n$ 还是 $2n$、残差方向以及更新时有没有混用新旧参数。
+\textbf{数值实验的目标是建立数学模型、优化算法与 Python 实现之间的联系。}若输出异常，应核对数据、损失缩放方式、残差方向与参数更新顺序。

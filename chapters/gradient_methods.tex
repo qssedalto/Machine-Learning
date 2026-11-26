@@ -26,30 +26,11 @@ f'(x)=2(x-3).
 \begin{equation}\label{eq:scalar-update}
 \boxed{x_{\text{新}}=x_{\text{旧}}-\eta f'(x_{\text{旧}}),\qquad \eta>0.}
 \end{equation}
-$\eta$ 是\textbf{学习率}。例如在 $x=1$ 时导数为 $-4$：减去一个负数会让 $x$ 增大，正好朝 $3$ 的方向移动；如果当前位置换成 $x=4$，导数变为 $2$，减去正数就会让 $x$ 减小。两种更新都朝同一个最低点靠近，但一次移动多少还要由学习率决定。学习率控制一次更新移动多远，不能随便设得很大。为什么公式是减号？因为正导数需要往左走，负导数需要往右走，减去导数恰好同时满足这两点。
+$\eta$ 是\textbf{学习率}，控制每次更新的步长。减去导数意味着沿局部下降方向更新参数，但学习率过大仍可能导致目标值上升。
 
-\subsection{迭代计算}
+\subsection{迭代过程与下降轨迹}
 
-取初值 $x_0=1$，学习率 $\eta=0.2$。第一次先算导数：
-\[
-f'(1)=2(1-3)=-4.
-\]
-代入更新公式：
-\[
-x_1=x_0-\eta f'(x_0)=1-0.2(-4)=\boxed{1.8}.
-\]
-更新前 $f(1)=4$；更新后 $f(1.8)=1.44$，确实下降了。继续照此计算：
-\begin{center}
-\begin{tabular}{rrr}\toprule
-迭代次数&当前 $x$&函数值 $f(x)$\\\midrule
-0&1&4\\
-1&1.8&1.44\\
-2&2.28&0.5184\\
-3&2.568&0.186624\\
-4&2.7408&0.06718464\\\bottomrule
-\end{tabular}
-\end{center}
-你可以看到 $x$ 从 $1$ 逐渐靠近 $3$，函数值越来越小。
+重复应用梯度更新公式，便得到一系列参数迭代点。下图展示二次目标函数上的下降轨迹；实际计算可交由数值优化程序完成。
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}
 \begin{axis}[width=.76\textwidth,height=6cm,xlabel={$x$},ylabel={$f(x)$},xmin=0.6,xmax=4.6,ymin=-.1,ymax=5.2,grid=major,grid style={draw=gray!15},tick align=outside]
@@ -100,43 +81,6 @@ J(w,b)=\frac1{2m}\sum_{i=1}^{m}(wx_i+b-y_i)^2.
 \end{aligned}}
 \end{equation}
 两式中的 $wx_i+b-y_i$ 均为第 $i$ 个样本的预测值减真实值。由于 $\partial(wx_i+b-y_i)/\partial w=x_i$，对 $w$ 求偏导时每一项还需乘以 $x_i$；由于 $\partial(wx_i+b-y_i)/\partial b=1$，对 $b$ 求偏导时不需要这一因子。最后对各样本的结果求平均。
-
-\subsection{双参数梯度下降}
-
-设训练数据为：
-\[
-(x_1,y_1)=(0,1),\qquad (x_2,y_2)=(1,3).
-\]
-线性模型 $\hat y=wx+b$ 的损失函数为
-\begin{equation}\label{eq:gd-two-points}
-J(w,b)=\frac14[(b-1)^2+(w+b-3)^2].
-\end{equation}
-将两组数据分别代入模型：当 $x=0$ 时，预测值为 $b$，预测误差为 $b-1$；当 $x=1$ 时，预测值为 $w+b$，预测误差为 $w+b-3$。平方后求和，再除以 $2m=4$，即可得到上式。
-
-直接求导：
-\[
-\frac{\partial J}{\partial w}=\frac12(w+b-3),\qquad
-\frac{\partial J}{\partial b}=\frac12[(b-1)+(w+b-3)].
-\]
-取初值 $w_0=b_0=0$，学习率 $\eta=0.2$。先在旧参数处计算：
-\[
-\left.\frac{\partial J}{\partial w}\right|_{(0,0)}=-1.5,\qquad
-\left.\frac{\partial J}{\partial b}\right|_{(0,0)}=-2.
-\]
-再一起更新：
-\begin{align*}
-w_1&=0-0.2(-1.5)=0.3,\\
-b_1&=0-0.2(-2)=0.4.
-\end{align*}
-第一次更新后的模型便是
-\begin{equation}\label{eq:gd-first-step}
-\boxed{\hat y=0.3x+0.4.}
-\end{equation}
-检查一下：更新前 $J(0,0)=(1+9)/4=2.5$；更新后
-\[
-J(0.3,0.4)=\frac{(-0.6)^2+(-2.3)^2}{4}=1.4125.
-\]
-这一次更新真的使损失下降了。继续计算偏导并更新，参数会逐渐接近 $w=2,b=1$，最终直线为 $\hat y=2x+1$。
 
 \subsection{学习率与收敛行为}
 

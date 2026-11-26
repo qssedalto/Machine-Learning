@@ -58,25 +58,9 @@ H(D\mid A)=\sum_{v=1}^{V}\frac{|D_v|}{|D|}H(D_v).
 \end{equation}
 采用经验概率时，这个量也可理解为标签与候选划分特征的经验互信息。经典 ID3 算法在每个节点选择信息增益较大的特征；这属于\textbf{局部贪心选择}，不保证生成全局最优的树。
 
-\subsection{手工计算：选择根节点}
+\subsection{递归划分与决策规则}
 
-先算整个训练集的熵。六个样本中四个获批、两个未获批，因此
-\[
-H(D)=-\frac46\log_2\frac46-\frac26\log_2\frac26
-\approx\boxed{0.9183}.
-\]
-\textbf{方案 A：按照是否有稳定工作划分。} 有工作的三人都获批，熵为 $0$；无工作的三人中一人获批、两人未获批，熵约为 $0.9183$。于是
-\begin{align*}
-H(D\mid A)&=\frac36\times0+\frac36\times0.9183\approx0.4591,\\
-\operatorname{Gain}(D,A)&\approx0.9183-0.4591=\boxed{0.4591}.
-\end{align*}
-
-\textbf{方案 B：按照是否有房产划分。} 有房产的两人都获批，熵为 $0$；无房产的四人中有两人获批、两人未获批，熵为 $1$。因此
-\begin{align*}
-H(D\mid B)&=\frac26\times0+\frac46\times1\approx0.6667,\\
-\operatorname{Gain}(D,B)&\approx0.9183-0.6667=\boxed{0.2516}.
-\end{align*}
-比较得到 $0.4591>0.2516$，所以在根节点优先选择“有稳定工作”。对“无工作”的三个样本继续按“有房产”划分，便得到所有叶节点都纯净的决策规则。
+在当前节点，训练算法评估候选划分的信息增益，选择符合准则的划分，并递归处理子节点，直至达到停止条件。下图说明递归划分产生的树形决策规则。
 
 \begin{figure}[htbp]\centering
 \begin{tikzpicture}[level distance=16mm, every node/.style={font=\small,align=center},
